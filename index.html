@@ -892,7 +892,7 @@ body.np-open{overflow:hidden}
       <div class="library-list" id="libraryList"></div>
 
       <div class="library-foot">
-        <button class="foot-btn" data-action="upload"><svg class="ico"><use href="#i-upload"/></svg>Добавить музыку</button>
+        <button class="foot-btn" data-action="upload" title="Добавить аудиофайлы или архив ZIP"><svg class="ico"><use href="#i-upload"/></svg>Добавить музыку</button>
         <div class="foot-row">
           <button class="foot-btn small" data-action="export-zip" title="Скачать медиатеку архивом"><svg class="ico"><use href="#i-download"/></svg>Экспорт</button>
           <button class="foot-btn small" data-action="import-zip" title="Загрузить медиатеку из архива"><svg class="ico"><use href="#i-archive"/></svg>Импорт</button>
@@ -972,7 +972,7 @@ body.np-open{overflow:hidden}
   <div class="dropzone-inner">
     <svg class="ico"><use href="#i-upload"/></svg>
     <strong>Отпустите файлы, чтобы добавить их в библиотеку</strong>
-    <span>MP3 · M4A · FLAC · AAC · WAV · OGG · OPUS</span>
+    <span>MP3 · M4A · FLAC · AAC · WAV · OGG · OPUS … или ZIP-архив SpotClone</span>
   </div>
 </div>
 
@@ -1049,7 +1049,7 @@ body.np-open{overflow:hidden}
 </section>
 
 <input id="fileInput" type="file" multiple hidden
-       accept="audio/*,.mp3,.m4a,.mp4,.m4b,.flac,.aac,.wav,.ogg,.oga,.opus,.webm,.aiff,.aif,.alac">
+       accept="audio/*,.mp3,.m4a,.mp4,.m4b,.flac,.aac,.wav,.ogg,.oga,.opus,.webm,.aiff,.aif,.alac,.zip,application/zip,application/x-zip-compressed">
 <input id="folderInput" type="file" webkitdirectory directory multiple hidden>
 <input id="zipInput" type="file" accept=".zip,application/zip" hidden>
 <input id="coverInput" type="file" accept="image/*" hidden>
@@ -3393,9 +3393,30 @@ body.np-open{overflow:hidden}
   const AUDIO_EXT = /\.(mp3|mp2|m4a|m4b|m4r|mp4|alac|aac|flac|wav|wave|ogg|oga|opus|webm|aiff|aif|aifc|wma)$/i;
   const isAudioFile = (f) => f && (AUDIO_EXT.test(f.name) || (f.type && f.type.indexOf('audio/') === 0));
 
+  const isZipFile = (f) => f && (/\.zip$/i.test(f.name) || /zip/i.test(f.type || ''));
+
+  /** Точка входа для выбора файлов и drag & drop: понимает и аудио, и ZIP-архивы. */
   async function handleFiles(fileList) {
-    const files = Array.from(fileList || []).filter(isAudioFile);
-    if (!files.length) { toast('Не найдено ни одного аудиофайла', 'err'); return; }
+    const all = Array.from(fileList || []);
+    const zips = all.filter(isZipFile);
+    const files = all.filter(isAudioFile);
+
+    if (zips.length) {
+      if (files.length) await uploadAudioFiles(files);
+      if (zips.length > 1) {
+        toast(`Архивов ${zips.length} — открываю первый, остальные добавьте по одному`);
+      }
+      importDialog(zips[0]);
+      return;
+    }
+    if (!files.length) {
+      toast('Не понял файл: нужны MP3, M4A, FLAC, AAC, WAV, OGG или ZIP-архив SpotClone', 'err');
+      return;
+    }
+    await uploadAudioFiles(files);
+  }
+
+  async function uploadAudioFiles(files) {
     if (state.uploading) { toast('Дождитесь завершения текущей загрузки'); return; }
     state.uploading = true;
 
@@ -5311,7 +5332,8 @@ body.np-open{overflow:hidden}
     openModal(`
       <h3>Импорт медиатеки</h3>
       <p class="sub">Архив: ${esc(file.name)} · ${fmtBytes(file.size)}<br>
-      «Объединить» добавит новые треки к текущим. «Заменить» сначала очистит библиотеку.</p>
+      «Объединить» добавит новые треки к текущим. «Заменить» сначала очистит библиотеку.<br>
+      Подходит любой архив SpotClone: вся медиатека, альбом, плейлист или один трек.</p>
       <div class="modal-actions" style="flex-wrap:wrap;gap:8px">
         <button class="btn-secondary" data-cancel>Отмена</button>
         <button class="btn-green ghost" data-merge>Объединить</button>
