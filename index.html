@@ -2916,6 +2916,7 @@ body.np-open{overflow:hidden}
     <div class="hero-actions">
       <button class="play-fab" data-action="play-hero" data-ctx="${esc(opts.ctx)}" title="Играть">${ICON('play')}</button>
       <button class="icon-btn lg" data-action="hero-shuffle" data-ctx="${esc(opts.ctx)}" title="Перемешать">${ICON('shuffle')}</button>
+      ${opts.downloadCtx ? `<button class="icon-btn lg" data-action="download-ctx" data-ctx="${esc(opts.downloadCtx)}" title="Скачать в ZIP">${ICON('download')}</button>` : ''}
       ${opts.menuId ? `<button class="icon-btn lg" data-action="hero-menu" data-id="${opts.menuId}" title="Ещё">${ICON('more')}</button>` : ''}
       ${opts.extra || ''}
     </div>`;
@@ -2938,6 +2939,7 @@ body.np-open{overflow:hidden}
       art: `<div class="hero-art">${ICON('note')}</div>`,
       sub: `<b>${all.length}</b> ${plural(all.length, 'трек', 'трека', 'треков')} <span class="dot">•</span> ${fmtTime(totalMs)}`,
       ctx: 'library',
+      downloadCtx: 'library',
       extra: `<div style="margin-left:auto;display:flex;gap:8px">
         <button class="btn-green ghost" data-action="new-album">${ICON('disc')}Создать альбом</button>
         <button class="btn-green" data-action="upload">${ICON('upload')}Добавить</button>
@@ -2974,7 +2976,8 @@ body.np-open{overflow:hidden}
       title: 'Мне нравится',
       art: `<div class="hero-art liked">${ICON('heart-fill')}</div>`,
       sub: `<b>${allLiked.length}</b> ${plural(allLiked.length, 'трек', 'трека', 'треков')} <span class="dot">•</span> ${fmtTime(allLiked.reduce((s, t) => s + (t.duration || 0), 0))}`,
-      ctx: 'liked'
+      ctx: 'liked',
+      downloadCtx: 'liked'
     });
     html += `<div class="section" style="padding-left:16px;padding-right:16px">${trackTable(list, { title: 'Мне нравится' })}</div></div>`;
     el.content.innerHTML = html;
@@ -3003,7 +3006,8 @@ body.np-open{overflow:hidden}
       art: playlistArtHtml(pl, 'hero-art'),
       sub: `<b>${esc(pl.name)}</b> <span class="dot">•</span> ${tracks.length} ${plural(tracks.length, 'трек', 'трека', 'треков')} <span class="dot">•</span> ${fmtTime(totalMs)}`,
       ctx: 'playlist:' + pl.id,
-      menuId: pl.id
+      menuId: pl.id,
+      downloadCtx: 'playlist:' + pl.id
     });
     html += `<div class="section" style="padding-left:16px;padding-right:16px">`;
     if (!tracks.length) {
@@ -3064,7 +3068,8 @@ body.np-open{overflow:hidden}
       art,
       sub: `${al.artist ? `<b>${esc(al.artist)}</b> <span class="dot">•</span> ` : ''}${al.year ? esc(al.year) + ' <span class="dot">•</span> ' : ''}${tracks.length} ${plural(tracks.length, 'трек', 'трека', 'треков')} <span class="dot">•</span> ${fmtTime(totalMs)}`,
       ctx: 'release:' + al.id,
-      menuId: al.id
+      menuId: al.id,
+      downloadCtx: 'release:' + al.id
     });
     html += `<div class="section" style="padding-left:16px;padding-right:16px">`;
     if (!tracks.length) {
@@ -3206,7 +3211,8 @@ body.np-open{overflow:hidden}
       title: value,
       art: artHtml(tracks[0], 'hero-art'),
       sub: `${kind === 'album' ? esc(tracks[0].artist) : 'Исполнитель'} <span class="dot">•</span> ${tracks.length} ${plural(tracks.length, 'трек', 'трека', 'треков')} <span class="dot">•</span> ${fmtTime(tracks.reduce((s, t) => s + (t.duration || 0), 0))}`,
-      ctx: ctxKey
+      ctx: ctxKey,
+      downloadCtx: ctxKey
     });
     html += `<div class="section" style="padding-left:16px;padding-right:16px">${trackTable(tracks, { title: value, hideDate: true })}</div></div>`;
     el.content.innerHTML = html;
@@ -3834,7 +3840,8 @@ body.np-open{overflow:hidden}
       },
       { text: 'Добавить в плейлист…', icon: 'plus', action: () => choosePlaylist([track.id]) },
       { text: 'Добавить в альбом…', icon: 'disc', action: () => chooseAlbum([track.id]) },
-      { text: 'Изменить информацию…', icon: 'edit', action: () => editTrackModal(track) }
+      { text: 'Изменить информацию…', icon: 'edit', action: () => editTrackModal(track) },
+      { text: 'Скачать трек (ZIP)', icon: 'download', action: () => exportContext('track:' + track.id) }
     ];
     if (state.route.name === 'playlist' && state.route.id !== LIKED_ID) {
       const pl = playlistById(state.route.id);
@@ -3892,6 +3899,7 @@ body.np-open{overflow:hidden}
     const items = [
       { text: 'Играть', icon: 'play', action: () => playCtx('playlist:' + pl.id) },
       { text: 'Перемешать', icon: 'shuffle', action: () => playCtx('playlist:' + pl.id, true) },
+      { text: 'Скачать плейлист (ZIP)', icon: 'download', action: () => exportContext('playlist:' + pl.id) },
       { sep: true },
       {
         text: 'Переименовать', icon: 'edit', action: async () => {
@@ -4011,6 +4019,7 @@ body.np-open{overflow:hidden}
             { text: 'Играть', icon: 'play', action: () => Player.playTrack(t, state.currentList, state.currentContext.title) },
             { text: isLiked(t.id) ? 'Убрать из «Мне нравится»' : 'В «Мне нравится»', icon: 'heart', action: () => toggleLike(t.id) },
             { text: 'Добавить в плейлист…', icon: 'plus', action: () => choosePlaylist([t.id]) },
+            { text: 'Скачать трек (ZIP)', icon: 'download', action: () => exportContext('track:' + t.id) },
             { sep: true },
             { text: 'Удалить из библиотеки', icon: 'trash', danger: true, action: () => deleteTrack(t) }
           ]);
@@ -4187,6 +4196,7 @@ body.np-open{overflow:hidden}
           { text: isLiked(cur2.id) ? 'Убрать из «Мне нравится»' : 'В «Мне нравится»', icon: 'heart', action: () => toggleLike(cur2.id) },
           { text: 'Добавить в плейлист…', icon: 'plus', action: () => choosePlaylist([cur2.id]) },
           { text: 'Добавить в альбом…', icon: 'disc', action: () => chooseAlbum([cur2.id]) },
+          { text: 'Скачать трек (ZIP)', icon: 'download', action: () => exportContext('track:' + cur2.id) },
           { text: 'Свойства файла', icon: 'note', action: () => showTrackInfo(cur2) }
         ]);
         break;
@@ -4222,6 +4232,7 @@ body.np-open{overflow:hidden}
       case 'lyrics-sync-undo': undoSync(); break;
       case 'lyrics-sync-done': finishSync(); break;
       case 'export-zip': exportLibrary(); break;
+      case 'download-ctx': exportContext(actionEl.dataset.ctx || ctx); break;
       case 'import-zip': $('#zipInput').click(); break;
       case 'toggle': Player.toggle(); break;
       case 'next': Player.next(true); break;
@@ -4756,6 +4767,7 @@ body.np-open{overflow:hidden}
         const ids = await pickTracks({ title: `Добавить в «${album.name}»`, excludeIds: album.trackIds });
         if (ids && ids.length) await addTracksToAlbum(album, ids);
       } },
+      { text: 'Скачать альбом (ZIP)', icon: 'download', action: () => exportContext('release:' + album.id) },
       { sep: true },
       { text: 'Сведения об альбоме…', icon: 'edit', action: () => editAlbum(album) },
       { text: 'Удалить альбом', icon: 'trash', danger: true, action: () => deleteAlbum(album) }
@@ -4902,92 +4914,218 @@ body.np-open{overflow:hidden}
   }
 
   const BACKUP_README = [
-    'SpotClone — архив медиатеки',
+    'SpotClone — архив',
     '',
-    'library.json  — метаданные: треки, плейлисты, альбомы, настройки',
-    'media/        — аудиофайлы (имена = id треков)',
-    'covers/       — обложки',
+    'library.json      метаданные: треки, плейлисты, альбомы, настройки',
+    'media/            аудиофайлы (имя = id трека)',
+    'covers/           обложки треков и альбомов',
+    'lyrics/           тексты песен в формате LRC',
+    'playlist.m3u8     готовый плейлист для VLC / foobar2000 и других плееров',
     '',
-    'Как восстановить: откройте SpotClone → «Импорт» в левом нижнем углу →',
-    'выберите этот файл. Можно объединить с текущей библиотекой или заменить её.',
+    'Как восстановить: SpotClone → «Импорт» (внизу слева) → выбрать этот файл.',
+    'Можно объединить с текущей библиотекой или заменить её.',
+    'Архив может содержать как всю медиатеку, так и один трек / плейлист / альбом.',
     ''
   ].join('\n');
 
-  async function exportLibrary() {
-    if (!state.tracks.length) { toast('Медиатека пуста — нечего экспортировать', 'err'); return; }
-    const ui = progressBar('Готовлю архив…');
+  function today() { return new Date().toISOString().slice(0, 10); }
+
+  function sanitizeFileName(name, fallback) {
+    const clean = String(name || '')
+      .replace(/[\\/:*?"<>|\n\r\t]+/g, ' ')
+      .replace(/\s+/g, ' ')
+      .trim()
+      .slice(0, 80);
+    return clean || fallback || 'spotclone';
+  }
+
+  const EXT_RE = /\.([A-Za-z0-9]+)$/;
+  function fileExt(fileName) {
+    const m = String(fileName || '').match(EXT_RE);
+    return m ? m[1].toLowerCase() : 'bin';
+  }
+  function coverExt(blob) {
+    const type = (blob && blob.type) || 'image/jpeg';
+    return /png/.test(type) ? 'png' : (/webp/.test(type) ? 'webp' : 'jpg');
+  }
+
+  /**
+   * Собирает ZIP с произвольным набором треков (вся медиатека, плейлист, альбом, один трек).
+   * Формат манифеста одинаковый, поэтому любой такой архив импортируется обратно.
+   */
+  async function buildArchive(opts) {
+    const tracks = opts.tracks || [];
+    const playlists = opts.playlists || [];
+    const albums = opts.albums || [];
+    const entries = [];
+    const tracksMeta = [];
+    const mediaPath = new Map();
+
+    for (let i = 0; i < tracks.length; i++) {
+      const t = tracks[i];
+      const mediaName = `media/${t.id}.${fileExt(t.fileName)}`;
+      mediaPath.set(t.id, mediaName);
+      entries.push({ name: mediaName, blob: t.audioBlob });
+
+      let coverName = null;
+      if (t.coverBlob) {
+        coverName = `covers/${t.id}.${coverExt(t.coverBlob)}`;
+        entries.push({ name: coverName, blob: t.coverBlob });
+      }
+
+      let lyricsName = null;
+      const lyricsText = t.lyrics ? (t.lyrics.synced || t.lyrics.plain || '') : '';
+      if (lyricsText) {
+        lyricsName = `lyrics/${t.id}.lrc`;
+        entries.push({ name: lyricsName, blob: new Blob([lyricsText], { type: 'text/plain' }) });
+      }
+
+      tracksMeta.push({
+        id: t.id, title: t.title, artist: t.artist, album: t.album, albumId: t.albumId || null,
+        albumArtist: t.albumArtist || '', year: t.year || '', genre: t.genre || '',
+        trackNo: t.trackNo || '', duration: t.duration || 0, size: t.size || 0,
+        mime: t.mime || '', fileName: t.fileName, addedAt: t.addedAt,
+        lyrics: t.lyrics || null,
+        media: mediaName, cover: coverName, lyricsFile: lyricsName
+      });
+
+      if (opts.onProgress) opts.onProgress(i + 1, tracks.length, t);
+      if (i % 10 === 0) await new Promise((r) => setTimeout(r, 0));
+    }
+
+    /* обложки альбомов */
+    const albumsMeta = [];
+    for (const a of albums) {
+      let coverName = null;
+      if (a.coverBlob) {
+        coverName = `covers/album-${a.id}.${coverExt(a.coverBlob)}`;
+        entries.push({ name: coverName, blob: a.coverBlob });
+      }
+      albumsMeta.push({
+        id: a.id, name: a.name, artist: a.artist || '', year: a.year || '',
+        trackIds: a.trackIds || tracks.map((t) => t.id), createdAt: a.createdAt || Date.now(),
+        cover: coverName
+      });
+    }
+
+    const playlistsMeta = playlists.map((pl) => ({
+      id: pl.id, name: pl.name, trackIds: pl.trackIds || [], createdAt: pl.createdAt || Date.now(),
+      system: !!pl.system
+    }));
+
+    /* m3u8 — чтобы архив открывался в обычных плеерах */
+    const m3u = ['#EXTM3U', '#PLAYLIST:' + (opts.playlistName || 'SpotClone')];
+    tracks.forEach((t) => {
+      const path = mediaPath.get(t.id);
+      if (!path) return;
+      m3u.push(`#EXTINF:${Math.round((t.duration || 0) / 1000)},${t.artist} - ${t.title}`);
+      m3u.push(path);
+    });
+    entries.push({ name: 'playlist.m3u8', blob: new Blob([m3u.join('\n') + '\n'], { type: 'audio/x-mpegurl' }) });
+
+    const manifest = {
+      app: 'SpotClone',
+      version: 1,
+      partial: !opts.full,
+      title: opts.playlistName || 'SpotClone',
+      exportedAt: new Date().toISOString(),
+      tracks: tracksMeta,
+      playlists: playlistsMeta,
+      albums: albumsMeta,
+      settings: opts.settings || null
+    };
+
+    entries.push({
+      name: 'library.json',
+      blob: new Blob([JSON.stringify(manifest, null, 2)], { type: 'application/json' })
+    });
+    entries.push({ name: 'readme.txt', blob: new Blob([BACKUP_README], { type: 'text/plain' }) });
+
+    return { entries, manifest };
+  }
+
+  async function exportSet(opts) {
+    if (!opts.tracks || !opts.tracks.length) { toast('Здесь нет треков для скачивания', 'err'); return; }
+    const ui = progressBar(opts.label ? `Готовлю «${opts.label}»…` : 'Готовлю архив…');
     try {
-      const entries = [];
-      const tracksMeta = [];
-
-      for (let i = 0; i < state.tracks.length; i++) {
-        const t = state.tracks[i];
-        const ext = ((t.fileName || '').match(/\.([A-Za-z0-9]+)$/) || [null, 'bin'])[1].toLowerCase();
-        const mediaName = `media/${t.id}.${ext}`;
-        entries.push({ name: mediaName, blob: t.audioBlob });
-
-        let coverName = null;
-        if (t.coverBlob) {
-          const ctype = t.coverBlob.type || 'image/jpeg';
-          const cext = /png/.test(ctype) ? 'png' : (/webp/.test(ctype) ? 'webp' : 'jpg');
-          coverName = `covers/${t.id}.${cext}`;
-          entries.push({ name: coverName, blob: t.coverBlob });
-        }
-
-        tracksMeta.push({
-          id: t.id, title: t.title, artist: t.artist, album: t.album, albumId: t.albumId || null,
-          albumArtist: t.albumArtist || '', year: t.year || '', genre: t.genre || '',
-          trackNo: t.trackNo || '', duration: t.duration || 0, size: t.size || 0,
-          mime: t.mime || '', fileName: t.fileName, addedAt: t.addedAt,
-          lyrics: t.lyrics || null,
-          media: mediaName, cover: coverName
-        });
-        ui.set(`Экспорт: ${i + 1} из ${state.tracks.length}`, t.title);
-        if (i % 10 === 0) await new Promise((r) => setTimeout(r, 0));
-      }
-
-      const manifest = {
-        app: 'SpotClone',
-        version: 1,
-        exportedAt: new Date().toISOString(),
-        tracks: tracksMeta,
-        playlists: state.playlists.map((p) => ({
-          id: p.id, name: p.name, trackIds: p.trackIds, createdAt: p.createdAt, system: !!p.system
-        })),
-        albums: state.albums.map((a) => ({
-          id: a.id, name: a.name, artist: a.artist, year: a.year, trackIds: a.trackIds, createdAt: a.createdAt
-        })),
-        settings: {
-          volume: Player.state.volume,
-          shuffle: Player.state.shuffle,
-          repeat: Player.state.repeat,
-          recent: state.recent
-        }
-      };
-
-      // обложки альбомов
-      for (const a of state.albums) {
-        if (!a.coverBlob) continue;
-        const ctype = a.coverBlob.type || 'image/jpeg';
-        const cext = /png/.test(ctype) ? 'png' : (/webp/.test(ctype) ? 'webp' : 'jpg');
-        entries.push({ name: `covers/album-${a.id}.${cext}`, blob: a.coverBlob });
-        manifest.albums.find((x) => x.id === a.id).cover = `covers/album-${a.id}.${cext}`;
-      }
-
-      entries.push({ name: 'library.json', blob: new Blob([JSON.stringify(manifest, null, 2)], { type: 'application/json' }) });
-      entries.push({ name: 'readme.txt', blob: new Blob([BACKUP_README], { type: 'text/plain' }) });
-
+      const { entries } = await buildArchive({
+        ...opts,
+        onProgress: (i, n, t) => ui.set(`Экспорт: ${i} из ${n}`, t.title)
+      });
       ui.set('Упаковываю ZIP…', `файлов: ${entries.length}`);
       const blob = await Zip.create(entries, (i, n) => ui.set(`Упаковка: ${i} из ${n}`, ''));
-      const name = `spotclone-backup-${new Date().toISOString().slice(0, 10)}.zip`;
-      downloadBlob(blob, name);
+      downloadBlob(blob, opts.fileName);
       ui.done();
-      toast(`Готово: ${state.tracks.length} ${plural(state.tracks.length, 'трек', 'трека', 'треков')} · ${fmtBytes(blob.size)}`);
+      toast(`${opts.label || 'Архив'}: ${opts.tracks.length} ${plural(opts.tracks.length, 'трек', 'трека', 'треков')} · ${fmtBytes(blob.size)}`);
+      return blob;
     } catch (e) {
       console.error(e);
       ui.done();
       toast('Не удалось создать архив: ' + e.message, 'err');
     }
+  }
+
+  async function exportLibrary() {
+    if (!state.tracks.length) { toast('Медиатека пуста — нечего экспортировать', 'err'); return; }
+    return exportSet({
+      tracks: sortedTracks(state.tracks),
+      playlists: state.playlists,
+      albums: state.albums,
+      full: true,
+      settings: {
+        volume: Player.state.volume,
+        shuffle: Player.state.shuffle,
+        repeat: Player.state.repeat,
+        recent: state.recent
+      },
+      fileName: `spotclone-backup-${today()}.zip`,
+      label: 'Медиатека',
+      playlistName: 'SpotClone'
+    });
+  }
+
+  /** Скачать то, что сейчас открыто: трек, плейлист, альбом, исполнителя, всю библиотеку. */
+  async function exportContext(ctx) {
+    if (!ctx) { toast('Нечего скачивать', 'err'); return; }
+    const tracks = listForCtxId(ctx);
+    if (!tracks || !tracks.length) { toast('Здесь нет треков для скачивания', 'err'); return; }
+
+    const title = titleForCtxId(ctx) || 'SpotClone';
+    let playlists = [];
+    let albums = [];
+
+    if (ctx === 'liked') {
+      const lk = state.playlists.find((x) => x.id === LIKED_ID);
+      if (lk) playlists = [lk];
+    } else if (ctx.indexOf('playlist:') === 0) {
+      const pl = playlistById(ctx.slice(9));
+      if (pl) playlists = [pl];
+    } else if (ctx.indexOf('release:') === 0) {
+      const al = albumById(ctx.slice(8));
+      if (al) albums = [al];
+    } else if (ctx.indexOf('album:') === 0) {
+      albums = [{
+        id: 'tagged-' + sanitizeFileName(title, 'album').toLowerCase().replace(/\s+/g, '-'),
+        name: title,
+        artist: tracks[0].albumArtist || tracks[0].artist || '',
+        year: tracks[0].year || '',
+        trackIds: tracks.map((t) => t.id),
+        createdAt: Date.now()
+      }];
+    }
+
+    const single = ctx.indexOf('track:') === 0 && tracks.length === 1;
+    const base = sanitizeFileName(single ? `${tracks[0].artist} - ${tracks[0].title}` : title, 'spotclone');
+
+    return exportSet({
+      tracks,
+      playlists,
+      albums,
+      full: false,
+      fileName: `spotclone-${base}-${today()}.zip`,
+      label: title,
+      playlistName: title
+    });
   }
 
   function guessImageType(name) {
@@ -5043,6 +5181,20 @@ body.np-open{overflow:hidden}
         const taken = state.tracks.some((t) => t.id === meta.id);
         const id = taken ? uid() : meta.id;
 
+        let lyrics = meta.lyrics || null;
+        if (!lyrics) {
+          const lrcEntry = findEntry(meta.lyricsFile || `lyrics/${meta.id}.lrc`);
+          if (lrcEntry) {
+            const lrcText = Zip.utf8Decode(lrcEntry.data);
+            lyrics = {
+              synced: /\[\d{1,3}:\d{1,2}/.test(lrcText) ? lrcText : null,
+              plain: lrcText,
+              source: 'file',
+              updatedAt: Date.now()
+            };
+          }
+        }
+
         const track = {
           id,
           title: meta.title || 'Без названия',
@@ -5058,7 +5210,7 @@ body.np-open{overflow:hidden}
           mime: meta.mime || Tags.guessMime(meta.fileName || '', ''),
           fileName: meta.fileName || (meta.media || '').split('/').pop(),
           addedAt: meta.addedAt || Date.now(),
-          lyrics: meta.lyrics || null,
+          lyrics: lyrics,
           coverBlob: cover ? new Blob([cover.data], { type: guessImageType(cover.name) }) : null,
           audioBlob: new Blob([media.data], { type: meta.mime || 'audio/mpeg' })
         };
@@ -5692,6 +5844,8 @@ body.np-open{overflow:hidden}
     Zip: Zip,
     Tags: Tags,
     exportLibrary: exportLibrary,
+    exportContext: exportContext,
+    buildArchive: buildArchive,
     importLibrary: importLibrary,
     editTrackModal: editTrackModal,
     createAlbum: createAlbum,
