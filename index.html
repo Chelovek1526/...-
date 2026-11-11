@@ -590,6 +590,138 @@ svg.ico{width:20px;height:20px;fill:currentColor;flex:none;display:block}
 }
 .memnotice b{color:#ffe8a3}
 
+/* ============================================================
+   Полноэкранный плеер («как в Spotify»)
+   ============================================================ */
+.np-open{
+  display:flex;align-items:center;gap:12px;min-width:0;flex:1;
+  padding:4px;margin:-4px;border-radius:8px;text-align:left;
+  transition:background .15s;
+}
+.np-open:hover{background:rgba(255,255,255,.08)}
+.npfull{
+  position:fixed;inset:0;z-index:150;display:flex;flex-direction:column;
+  transform:translateY(100%);transition:transform .34s cubic-bezier(.32,.72,0,1);
+  will-change:transform;overflow:hidden;
+}
+.npfull.open{transform:translateY(0)}
+.npfull[hidden]{display:none}
+.npfull-bg{
+  position:absolute;inset:0;background:linear-gradient(180deg,#3a3a3a,#0b0b0b 70%);
+  transition:background .5s ease;
+}
+.npfull-bg::after{
+  content:"";position:absolute;inset:0;
+  background:radial-gradient(120% 60% at 50% 0%,rgba(255,255,255,.08),transparent 70%);
+}
+.npfull-top{
+  position:relative;z-index:2;display:flex;align-items:center;justify-content:space-between;
+  padding:14px 18px;flex:none;
+}
+.npfull-kicker{font-size:11.5px;letter-spacing:.12em;text-transform:uppercase;color:rgba(255,255,255,.75);font-weight:700}
+.npfull-body{
+  position:relative;z-index:2;flex:1;min-height:0;display:flex;flex-direction:column;justify-content:center;
+  gap:clamp(14px,3vh,26px);padding:0 clamp(20px,6vw,40px) max(26px,env(safe-area-inset-bottom));
+  width:100%;max-width:560px;margin:0 auto;overflow-y:auto;
+}
+.npfull-art{
+  width:100%;aspect-ratio:1;max-height:min(52vh,420px);border-radius:10px;overflow:hidden;
+  background:linear-gradient(135deg,#3c3c3c,#141414);display:grid;place-items:center;color:#9b9b9b;
+  box-shadow:0 22px 60px rgba(0,0,0,.6);margin:0 auto;
+}
+.npfull-art img{width:100%;height:100%;object-fit:cover}
+.npfull-art .ico{width:64px;height:64px;opacity:.5}
+.npfull-meta{display:flex;align-items:flex-end;justify-content:space-between;gap:16px}
+.npfull-text{min-width:0}
+.npfull-title{font-size:clamp(19px,4.5vw,26px);font-weight:800;letter-spacing:-.4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.npfull-artist{font-size:14px;color:var(--text-dim);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:2px}
+.npfull-artist:hover{color:#fff;text-decoration:underline;cursor:pointer}
+.npfull-meta .icon-btn.lg .ico{width:26px;height:26px}
+.npfull-meta .icon-btn.liked{color:var(--green)}
+.npfull-progress{position:relative}
+.np-progress-track{height:4px;border-radius:2px;background:rgba(255,255,255,.28);overflow:hidden;margin:8px 0 6px}
+.np-progress-fill{height:100%;width:0%;background:#fff;border-radius:2px}
+.npfull-progress:hover .np-progress-fill{background:var(--green)}
+.np-progress-input{position:absolute;inset:-10px 0 18px;width:100%;height:32px;margin:0;opacity:0;cursor:pointer;
+  -webkit-appearance:none;appearance:none;background:none;z-index:2}
+.npfull-times{display:flex;justify-content:space-between;font-size:11.5px;color:rgba(255,255,255,.62);font-variant-numeric:tabular-nums}
+.npfull-controls{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.npfull-controls .icon-btn{width:44px;height:44px}
+.npfull-controls .icon-btn .ico{width:22px;height:22px}
+.npfull-controls .icon-btn.big{width:52px;height:52px}
+.npfull-controls .icon-btn.big .ico{width:28px;height:28px}
+.npfull-controls .play-btn.big{width:62px;height:62px}
+.npfull-controls .play-btn.big .ico{width:26px;height:26px}
+.npfull-controls .icon-btn.on{color:var(--green)}
+.npfull-links{display:flex;align-items:center;justify-content:center;gap:8px;flex-wrap:wrap}
+.np-link{
+  display:inline-flex;align-items:center;gap:7px;padding:8px 14px;border-radius:20px;
+  background:rgba(255,255,255,.08);font-size:12.5px;font-weight:600;color:#eee;max-width:100%;
+}
+.np-link:hover{background:rgba(255,255,255,.16)}
+.np-link .ico{width:15px;height:15px}
+.np-link span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+@media (max-width:520px){
+  .npfull-art{max-height:44vh}
+  .npfull-body{gap:12px}
+}
+body.np-open{overflow:hidden}
+
+/* ============================================================
+   Подвал сайдбара: экспорт / импорт
+   ============================================================ */
+.foot-row{display:flex;gap:4px}
+.foot-btn.small{
+  flex:1;justify-content:center;font-size:12px;padding:7px 8px;gap:6px;
+  background:rgba(255,255,255,.05);border-radius:6px;
+}
+.foot-btn.small .ico{width:15px;height:15px}
+.foot-btn.small:hover{background:rgba(255,255,255,.11)}
+
+/* ============================================================
+   Формы в модалках: обложка, поля, выбор треков
+   ============================================================ */
+.cover-edit{display:flex;align-items:center;gap:14px;margin-bottom:18px}
+.cover-preview{
+  width:84px;height:84px;border-radius:8px;overflow:hidden;flex:none;display:grid;place-items:center;
+  background:linear-gradient(135deg,#3a3a3a,#191919);color:#9a9a9a;box-shadow:0 6px 18px rgba(0,0,0,.35);
+}
+.cover-preview img{width:100%;height:100%;object-fit:cover}
+.cover-edit-btns{display:flex;flex-direction:column;gap:6px}
+.cover-edit-btns .btn-green{padding:8px 14px;font-size:12.5px}
+.btn-link{font-size:12.5px;color:var(--text-mute);font-weight:600;text-align:left}
+.btn-link:hover{color:#fff;text-decoration:underline}
+.field{display:block;margin-bottom:12px}
+.field > span{display:block;font-size:11.5px;letter-spacing:.04em;text-transform:uppercase;color:var(--text-mute);margin-bottom:5px;font-weight:700}
+.field input[type=text]{
+  width:100%;background:#121212;border:1px solid rgba(255,255,255,.18);border-radius:6px;
+  color:#fff;padding:10px 12px;font-size:14px;outline:none;
+}
+.field input[type=text]:focus{border-color:var(--green)}
+.field-row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.check-row{display:flex;align-items:center;gap:9px;font-size:13px;color:var(--text-dim);margin:2px 0 16px}
+.check-row input{width:16px;height:16px;accent-color:var(--green)}
+.modal.wide{width:min(560px,100%)}
+.modal-scroll{max-height:52vh;overflow-y:auto;margin:0 -6px 14px;padding:0 6px}
+.picker-item{display:flex;align-items:center;gap:10px;padding:7px 8px;border-radius:6px;cursor:pointer}
+.picker-item:hover{background:rgba(255,255,255,.07)}
+.picker-item input{width:16px;height:16px;accent-color:var(--green);flex:none}
+.picker-item .lib-art{width:38px;height:38px}
+.picker-empty{color:var(--text-mute);font-size:13px;padding:14px 8px}
+.modal-search{
+  display:flex;align-items:center;gap:8px;background:#121212;border:1px solid rgba(255,255,255,.18);
+  border-radius:6px;padding:0 10px;color:var(--text-mute);margin-bottom:10px;
+}
+.modal-search .ico{width:16px;height:16px}
+.modal-search input{flex:1;min-width:0;background:none;border:0;outline:none;color:#fff;padding:9px 0;font-size:13.5px}
+
+/* строка выбора в меню «добавить в альбом» */
+.menu-item .ico{width:16px;height:16px}
+
+/* панель вне экрана не должна перехватывать клики */
+.npfull{pointer-events:none}
+.npfull.open{pointer-events:auto}
+
 </style>
 </head>
 <body>
@@ -621,6 +753,12 @@ svg.ico{width:20px;height:20px;fill:currentColor;flex:none;display:block}
   <symbol id="i-back" viewBox="0 0 24 24"><path d="M14.7 4.3 16.1 5.7 9.8 12l6.3 6.3-1.4 1.4L7 12l7.7-7.7Z"/></symbol>
   <symbol id="i-fwd" viewBox="0 0 24 24"><path d="M9.3 4.3 7.9 5.7 14.2 12l-6.3 6.3 1.4 1.4L17 12 9.3 4.3Z"/></symbol>
   <symbol id="i-check" viewBox="0 0 24 24"><path d="M9.6 16.2 5.4 12l-1.4 1.4 5.6 5.6L20.4 8.2 19 6.8 9.6 16.2Z"/></symbol>
+  <symbol id="i-chevron-down" viewBox="0 0 24 24"><path d="m12 15.4-7.4-7.4 1.4-1.4 6 6 6-6 1.4 1.4-7.4 7.4Z"/></symbol>
+  <symbol id="i-chevron-up" viewBox="0 0 24 24"><path d="m12 8.6 7.4 7.4-1.4 1.4-6-6-6 6-1.4-1.4 7.4-7.4Z"/></symbol>
+  <symbol id="i-disc" viewBox="0 0 24 24"><path d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20Zm0 2.2a7.8 7.8 0 1 1 0 15.6 7.8 7.8 0 0 1 0-15.6Zm0 4.6a3.2 3.2 0 1 0 0 6.4 3.2 3.2 0 0 0 0-6.4Z"/></symbol>
+  <symbol id="i-download" viewBox="0 0 24 24"><path d="M11 3h2v10.2l3.3-3.3 1.4 1.4-5.7 5.7-5.7-5.7 1.4-1.4L11 13.2V3ZM3.5 18h17v3h-1.8v-1.2H5.3V21H3.5v-3Z"/></symbol>
+  <symbol id="i-archive" viewBox="0 0 24 24"><path d="M3 4h18v4H3V4Zm1 6h16v10H4V10Zm5 3v2h6v-2H9Z"/></symbol>
+  <symbol id="i-image" viewBox="0 0 24 24"><path d="M3 4h18v16H3V4Zm2 2v9.6l4-4 3.2 3.2 2.6-2.6L19 16.1V6H5Zm10.5 1.5a1.6 1.6 0 1 0 0 3.2 1.6 1.6 0 0 0 0-3.2Z"/></symbol>
   <symbol id="i-edit" viewBox="0 0 24 24"><path d="M4 17.2V20h2.8L17 9.8 14.2 7 4 17.2ZM19.7 7.3a1 1 0 0 0 0-1.4l-1.6-1.6a1 1 0 0 0-1.4 0L15.3 5.7l2.8 2.8 1.6-1.2Z"/></symbol>
 </svg>
 
@@ -665,6 +803,10 @@ svg.ico{width:20px;height:20px;fill:currentColor;flex:none;display:block}
 
       <div class="library-foot">
         <button class="foot-btn" data-action="upload"><svg class="ico"><use href="#i-upload"/></svg>Добавить музыку</button>
+        <div class="foot-row">
+          <button class="foot-btn small" data-action="export-zip" title="Скачать медиатеку архивом"><svg class="ico"><use href="#i-download"/></svg>Экспорт</button>
+          <button class="foot-btn small" data-action="import-zip" title="Загрузить медиатеку из архива"><svg class="ico"><use href="#i-archive"/></svg>Импорт</button>
+        </div>
         <div class="storage" id="storageInfo"></div>
       </div>
     </section>
@@ -698,11 +840,13 @@ svg.ico{width:20px;height:20px;fill:currentColor;flex:none;display:block}
   <!-- ================= PLAYER BAR ================= -->
   <footer class="player" id="player">
     <div class="player-left">
-      <div class="np-cover" id="npCover"><svg class="ico"><use href="#i-note"/></svg></div>
-      <div class="np-meta">
-        <div class="np-title" id="npTitle">Ничего не играет</div>
-        <div class="np-artist" id="npArtist">Загрузите музыку, чтобы начать</div>
-      </div>
+      <button class="np-open" data-action="open-np" title="Открыть плеер">
+        <div class="np-cover" id="npCover"><svg class="ico"><use href="#i-note"/></svg></div>
+        <div class="np-meta">
+          <div class="np-title" id="npTitle">Ничего не играет</div>
+          <div class="np-artist" id="npArtist">Загрузите музыку, чтобы начать</div>
+        </div>
+      </button>
       <button class="icon-btn like-btn" data-action="like-current" title="В любимые"><svg class="ico"><use href="#i-heart"/></svg></button>
     </div>
 
@@ -725,6 +869,7 @@ svg.ico{width:20px;height:20px;fill:currentColor;flex:none;display:block}
     </div>
 
     <div class="player-right">
+      <button class="icon-btn" data-action="open-np" title="Открыть плеер"><svg class="ico"><use href="#i-chevron-up"/></svg></button>
       <button class="icon-btn" data-action="toggle-queue" title="Очередь воспроизведения"><svg class="ico"><use href="#i-queue"/></svg></button>
       <button class="icon-btn" data-action="mute" id="btnMute" title="Выключить звук (M)"><svg class="ico"><use href="#i-volume"/></svg></button>
       <input class="volume-input" id="volumeInput" type="range" min="0" max="100" value="80" step="1" aria-label="Громкость">
@@ -753,9 +898,55 @@ svg.ico{width:20px;height:20px;fill:currentColor;flex:none;display:block}
 </div>
 <div class="scrim" id="scrim" hidden></div>
 
+<section class="npfull" id="npFull" aria-hidden="true">
+  <div class="npfull-bg" id="npFullBg"></div>
+  <header class="npfull-top">
+    <button class="icon-btn" data-action="close-np" title="Свернуть"><svg class="ico"><use href="#i-chevron-down"/></svg></button>
+    <span class="npfull-kicker">Сейчас играет</span>
+    <button class="icon-btn" data-action="np-menu" title="Ещё"><svg class="ico"><use href="#i-more"/></svg></button>
+  </header>
+
+  <div class="npfull-body">
+    <div class="npfull-art" id="npFullArt"><svg class="ico"><use href="#i-note"/></svg></div>
+
+    <div class="npfull-meta">
+      <div class="npfull-text">
+        <div class="npfull-title" id="npFullTitle">Ничего не играет</div>
+        <div class="npfull-artist" id="npFullArtist"></div>
+      </div>
+      <button class="icon-btn lg" data-action="like-current" id="npFullLike" title="В любимые"><svg class="ico"><use href="#i-heart"/></svg></button>
+    </div>
+
+    <div class="npfull-progress">
+      <input class="progress-input np-progress-input" id="npProgressInput" type="range" min="0" max="1000" value="0" step="1" aria-label="Позиция трека">
+      <div class="np-progress-track"><div class="np-progress-fill" id="npProgressFill"></div></div>
+      <div class="npfull-times">
+        <span id="npCurTime">0:00</span>
+        <span id="npDurTime">0:00</span>
+      </div>
+    </div>
+
+    <div class="npfull-controls">
+      <button class="icon-btn" data-action="shuffle" id="npShuffle" title="Перемешать"><svg class="ico"><use href="#i-shuffle"/></svg></button>
+      <button class="icon-btn big" data-action="prev" title="Предыдущий"><svg class="ico"><use href="#i-prev"/></svg></button>
+      <button class="play-btn big" data-action="toggle" id="npPlay" title="Играть/пауза"><svg class="ico"><use href="#i-play"/></svg></button>
+      <button class="icon-btn big" data-action="next" title="Следующий"><svg class="ico"><use href="#i-next"/></svg></button>
+      <button class="icon-btn" data-action="repeat" id="npRepeat" title="Повтор"><svg class="ico"><use href="#i-repeat"/></svg></button>
+    </div>
+
+    <div class="npfull-links">
+      <button class="np-link" data-action="np-album"><svg class="ico"><use href="#i-disc"/></svg><span id="npFullAlbum">Альбом</span></button>
+      <button class="np-link" data-action="toggle-queue"><svg class="ico"><use href="#i-queue"/></svg>Очередь</button>
+      <button class="np-link" data-action="np-edit"><svg class="ico"><use href="#i-edit"/></svg>Изменить данные</button>
+    </div>
+  </div>
+</section>
+
 <input id="fileInput" type="file" multiple hidden
        accept="audio/*,.mp3,.m4a,.mp4,.m4b,.flac,.aac,.wav,.ogg,.oga,.opus,.webm,.aiff,.aif,.alac">
 <input id="folderInput" type="file" webkitdirectory directory multiple hidden>
+<input id="zipInput" type="file" accept=".zip,application/zip" hidden>
+<input id="coverInput" type="file" accept="image/*" hidden>
 
 <script>
 /* ===== js/tags.js ===== */
@@ -1241,9 +1432,10 @@ svg.ico{width:20px;height:20px;fill:currentColor;flex:none;display:block}
   'use strict';
 
   var DB_NAME = 'spotclone';
-  var DB_VERSION = 1;
+  var DB_VERSION = 2;
   var STORE_TRACKS = 'tracks';
   var STORE_PLAYLISTS = 'playlists';
+  var STORE_ALBUMS = 'albums';
   var STORE_META = 'meta';
 
   var dbPromise = null;
@@ -1253,9 +1445,12 @@ svg.ico{width:20px;height:20px;fill:currentColor;flex:none;display:block}
   var mem = {
     tracks: new Map(),
     playlists: new Map(),
+    albums: new Map(),
     meta: new Map()
   };
-  var MEM_STORES = { tracks: mem.tracks, playlists: mem.playlists, meta: mem.meta };
+  var MEM_STORES = {
+    tracks: mem.tracks, playlists: mem.playlists, albums: mem.albums, meta: mem.meta
+  };
 
   function memoryApi(storeName) {
     var map = MEM_STORES[storeName];
@@ -1287,6 +1482,9 @@ svg.ico{width:20px;height:20px;fill:currentColor;flex:none;display:block}
         }
         if (!db.objectStoreNames.contains(STORE_PLAYLISTS)) {
           db.createObjectStore(STORE_PLAYLISTS, { keyPath: 'id' });
+        }
+        if (!db.objectStoreNames.contains(STORE_ALBUMS)) {
+          db.createObjectStore(STORE_ALBUMS, { keyPath: 'id' });
         }
         if (!db.objectStoreNames.contains(STORE_META)) {
           db.createObjectStore(STORE_META, { keyPath: 'key' });
@@ -1371,6 +1569,21 @@ svg.ico{width:20px;height:20px;fill:currentColor;flex:none;display:block}
       });
     },
 
+    /* ---------- альбомы ---------- */
+    getAllAlbums: function () {
+      return run(STORE_ALBUMS, 'readonly', function (s) {
+        return memoryMode ? s.getAll() : wrap(s.getAll());
+      });
+    },
+    putAlbum: function (al) {
+      return run(STORE_ALBUMS, 'readwrite', function (s) { s.put(al); });
+    },
+    deleteAlbum: function (id) {
+      return run(STORE_ALBUMS, 'readwrite', function (s) {
+        return memoryMode ? s.del(id) : s.delete(id);
+      });
+    },
+
     /* ---------- настройки ---------- */
     getMeta: function (key, fallback) {
       return run(STORE_META, 'readonly', function (s) {
@@ -1388,11 +1601,11 @@ svg.ico{width:20px;height:20px;fill:currentColor;flex:none;display:block}
     clearAll: function () {
       return open().then(function (db) {
         if (!db) {
-          mem.tracks.clear(); mem.playlists.clear(); mem.meta.clear();
+          mem.tracks.clear(); mem.playlists.clear(); mem.albums.clear(); mem.meta.clear();
           return;
         }
         return new Promise(function (resolve, reject) {
-          var names = [STORE_TRACKS, STORE_PLAYLISTS, STORE_META];
+          var names = [STORE_TRACKS, STORE_PLAYLISTS, STORE_ALBUMS, STORE_META];
           var tx = db.transaction(names, 'readwrite');
           names.forEach(function (n) { tx.objectStore(n).clear(); });
           tx.oncomplete = function () { resolve(); };
@@ -1420,6 +1633,12 @@ svg.ico{width:20px;height:20px;fill:currentColor;flex:none;display:block}
     audioUrl: function (track) { return track ? objectUrl('a:' + track.id, track.audioBlob) : null; },
     coverUrl: function (track) { return track && track.coverBlob ? objectUrl('c:' + track.id, track.coverBlob) : null; },
     coverUrlFromBlob: function (blob, key) { return blob ? objectUrl('c:' + key, blob) : null; },
+    /** Сбросить только кэш обложки (например, после её замены). */
+    releaseCover: function (key) {
+      var k = 'c:' + key;
+      var u = urlCache.get(k);
+      if (u) { URL.revokeObjectURL(u); urlCache.delete(k); }
+    },
     release: function (trackId) {
       ['a:' + trackId, 'c:' + trackId].forEach(function (k) {
         var u = urlCache.get(k);
@@ -1434,6 +1653,253 @@ svg.ico{width:20px;height:20px;fill:currentColor;flex:none;display:block}
 
   global.DB = DB;
   global.Files = Files;
+})(window);
+
+</script>
+<script>
+/* ===== js/zip.js ===== */
+/* ============================================================
+   zip.js — минимальная реализация ZIP без зависимостей.
+   Запись: метод STORE (без сжатия) — быстро и без нагрузки на CPU,
+   данные берутся прямо из Blob, поэтому большие файлы не копятся
+   в памяти целиком.
+   Чтение: STORE и DEFLATE (через встроенный DecompressionStream),
+   т.е. открываются и чужие архивы, созданные обычными архиваторами.
+   ============================================================ */
+(function (global) {
+  'use strict';
+
+  /* ---------- UTF-8 (с запасным вариантом, если нет TextEncoder) ---------- */
+  function utf8Encode(str) {
+    if (typeof TextEncoder !== 'undefined') return new TextEncoder().encode(str);
+    var bytes = [];
+    for (var i = 0; i < str.length; i++) {
+      var c = str.charCodeAt(i);
+      if (c < 0x80) bytes.push(c);
+      else if (c < 0x800) bytes.push(0xc0 | (c >> 6), 0x80 | (c & 0x3f));
+      else if (c >= 0xd800 && c <= 0xdbff && i + 1 < str.length) {
+        var c2 = str.charCodeAt(++i);
+        var cp = 0x10000 + ((c - 0xd800) << 10) + (c2 - 0xdc00);
+        bytes.push(0xf0 | (cp >> 18), 0x80 | ((cp >> 12) & 0x3f), 0x80 | ((cp >> 6) & 0x3f), 0x80 | (cp & 0x3f));
+      } else bytes.push(0xe0 | (c >> 12), 0x80 | ((c >> 6) & 0x3f), 0x80 | (c & 0x3f));
+    }
+    return new Uint8Array(bytes);
+  }
+
+  function utf8Decode(bytes) {
+    if (typeof TextDecoder !== 'undefined') return new TextDecoder('utf-8').decode(bytes);
+    var out = '', i = 0;
+    while (i < bytes.length) {
+      var c = bytes[i++];
+      if (c < 0x80) out += String.fromCharCode(c);
+      else if (c >= 0xc0 && c < 0xe0) out += String.fromCharCode(((c & 0x1f) << 6) | (bytes[i++] & 0x3f));
+      else if (c >= 0xe0 && c < 0xf0) out += String.fromCharCode(((c & 0x0f) << 12) | ((bytes[i++] & 0x3f) << 6) | (bytes[i++] & 0x3f));
+      else {
+        var cp = ((c & 0x07) << 18) | ((bytes[i++] & 0x3f) << 12) | ((bytes[i++] & 0x3f) << 6) | (bytes[i++] & 0x3f);
+        cp -= 0x10000;
+        out += String.fromCharCode(0xd800 + (cp >> 10), 0xdc00 + (cp & 0x3ff));
+      }
+    }
+    return out;
+  }
+
+  /* ---------- CRC32 ---------- */
+  var CRC_TABLE = (function () {
+    var table = new Uint32Array(256);
+    for (var n = 0; n < 256; n++) {
+      var c = n;
+      for (var k = 0; k < 8; k++) c = c & 1 ? 0xEDB88320 ^ (c >>> 1) : c >>> 1;
+      table[n] = c >>> 0;
+    }
+    return table;
+  })();
+
+  function crc32(bytes) {
+    var crc = 0xFFFFFFFF;
+    for (var i = 0; i < bytes.length; i++) {
+      crc = CRC_TABLE[(crc ^ bytes[i]) & 0xFF] ^ (crc >>> 8);
+    }
+    return (crc ^ 0xFFFFFFFF) >>> 0;
+  }
+
+  /* ---------- дата в формате MS-DOS ---------- */
+  function dosDateTime(d) {
+    var year = d.getFullYear();
+    if (year < 1980) year = 1980;
+    return {
+      time: ((d.getHours() & 0x1f) << 11) | ((d.getMinutes() & 0x3f) << 5) | ((Math.floor(d.getSeconds() / 2)) & 0x1f),
+      date: (((year - 1980) & 0x7f) << 9) | (((d.getMonth() + 1) & 0x0f) << 5) | (d.getDate() & 0x1f)
+    };
+  }
+
+  function blobToBytes(blob) {
+    if (blob instanceof Uint8Array) return Promise.resolve(blob);
+    if (typeof blob.arrayBuffer === 'function') return blob.arrayBuffer().then(function (b) { return new Uint8Array(b); });
+    return new Promise(function (resolve, reject) {
+      var fr = new FileReader();
+      fr.onload = function () { resolve(new Uint8Array(fr.result)); };
+      fr.onerror = function () { reject(fr.error || new Error('Не удалось прочитать данные')); };
+      fr.readAsArrayBuffer(blob);
+    });
+  }
+
+  /**
+   * Собирает ZIP.
+   * @param {Array<{name:string, blob:Blob|Uint8Array, date?:Date}>} entries
+   * @param {Function} [onProgress] (готово, всего)
+   * @returns {Promise<Blob>}
+   */
+  async function create(entries, onProgress) {
+    var parts = [];
+    var central = [];
+    var offset = 0;
+
+    for (var i = 0; i < entries.length; i++) {
+      var e = entries[i];
+      var nameBytes = utf8Encode(e.name);
+      var data = await blobToBytes(e.blob);
+      var crc = crc32(data);
+      var size = data.length;
+      var dt = dosDateTime(e.date || new Date());
+
+      var lh = new Uint8Array(30 + nameBytes.length);
+      var dv = new DataView(lh.buffer);
+      dv.setUint32(0, 0x04034b50, true);   // local file header
+      dv.setUint16(4, 20, true);           // version needed
+      dv.setUint16(6, 0x0800, true);       // имена в UTF-8
+      dv.setUint16(8, 0, true);            // метод: STORE
+      dv.setUint16(10, dt.time, true);
+      dv.setUint16(12, dt.date, true);
+      dv.setUint32(14, crc, true);
+      dv.setUint32(18, size, true);        // сжатый размер
+      dv.setUint32(22, size, true);        // исходный размер
+      dv.setUint16(26, nameBytes.length, true);
+      dv.setUint16(28, 0, true);           // extra length
+      lh.set(nameBytes, 30);
+
+      parts.push(lh);
+      parts.push(e.blob instanceof Uint8Array ? e.blob : e.blob);
+
+      central.push({
+        nameBytes: nameBytes, crc: crc, size: size, time: dt.time, date: dt.date, offset: offset
+      });
+      offset += lh.length + size;
+
+      if (onProgress) onProgress(i + 1, entries.length);
+    }
+
+    /* ---------- central directory ---------- */
+    var cdParts = [];
+    var cdSize = 0;
+    central.forEach(function (c) {
+      var rec = new Uint8Array(46 + c.nameBytes.length);
+      var dv = new DataView(rec.buffer);
+      dv.setUint32(0, 0x02014b50, true);       // central directory header
+      dv.setUint16(4, 20, true);               // version made by
+      dv.setUint16(6, 20, true);               // version needed
+      dv.setUint16(8, 0x0800, true);           // UTF-8
+      dv.setUint16(10, 0, true);               // STORE
+      dv.setUint16(12, c.time, true);
+      dv.setUint16(14, c.date, true);
+      dv.setUint32(16, c.crc, true);
+      dv.setUint32(20, c.size, true);
+      dv.setUint32(24, c.size, true);
+      dv.setUint16(28, c.nameBytes.length, true);
+      dv.setUint16(30, 0, true);               // extra
+      dv.setUint16(32, 0, true);               // comment
+      dv.setUint16(34, 0, true);               // disk start
+      dv.setUint16(36, 0, true);               // internal attrs
+      dv.setUint32(38, 0, true);               // external attrs
+      dv.setUint32(42, c.offset, true);        // local header offset
+      rec.set(c.nameBytes, 46);
+      cdParts.push(rec);
+      cdSize += rec.length;
+    });
+
+    var eocd = new Uint8Array(22);
+    var edv = new DataView(eocd.buffer);
+    edv.setUint32(0, 0x06054b50, true);
+    edv.setUint16(4, 0, true);
+    edv.setUint16(6, 0, true);
+    edv.setUint16(8, central.length, true);
+    edv.setUint16(10, central.length, true);
+    edv.setUint32(12, cdSize, true);
+    edv.setUint32(16, offset, true);
+    edv.setUint16(20, 0, true);
+
+    return new Blob(parts.concat(cdParts, [eocd]), { type: 'application/zip' });
+  }
+
+  /* ---------- чтение ---------- */
+  function findEocd(bytes) {
+    var minPos = Math.max(0, bytes.length - 65557 - 22);
+    for (var i = bytes.length - 22; i >= minPos; i--) {
+      if (bytes[i] === 0x50 && bytes[i + 1] === 0x4b && bytes[i + 2] === 0x05 && bytes[i + 3] === 0x06) return i;
+    }
+    return -1;
+  }
+
+  async function inflateRaw(bytes) {
+    if (typeof DecompressionStream === 'undefined') {
+      throw new Error('Этот браузер не умеет распаковывать ZIP (нет DecompressionStream). Используйте архив, созданный SpotClone.');
+    }
+    var stream = new Blob([bytes]).stream().pipeThrough(new DecompressionStream('deflate-raw'));
+    var buf = await new Response(stream).arrayBuffer();
+    return new Uint8Array(buf);
+  }
+
+  /**
+   * Читает ZIP.
+   * @param {ArrayBuffer} buffer
+   * @param {Function} [onProgress]
+   * @returns {Promise<Array<{name:string, data:Uint8Array}>>}
+   */
+  async function read(buffer, onProgress) {
+    var bytes = new Uint8Array(buffer);
+    var dv = new DataView(buffer instanceof ArrayBuffer ? buffer : buffer.buffer);
+    var eocd = findEocd(bytes);
+    if (eocd < 0) throw new Error('Это не ZIP-архив (не найден заголовок)');
+
+    var count = dv.getUint16(eocd + 10, true);
+    var cdOffset = dv.getUint32(eocd + 16, true);
+    var p = cdOffset;
+    var out = [];
+
+    for (var i = 0; i < count; i++) {
+      if (dv.getUint32(p, true) !== 0x02014b50) break;
+      var method = dv.getUint16(p + 10, true);
+      var compSize = dv.getUint32(p + 20, true);
+      var nameLen = dv.getUint16(p + 28, true);
+      var extraLen = dv.getUint16(p + 30, true);
+      var commentLen = dv.getUint16(p + 32, true);
+      var localOff = dv.getUint32(p + 42, true);
+      var name = utf8Decode(bytes.subarray(p + 46, p + 46 + nameLen));
+
+      if (compSize === 0xFFFFFFFF || localOff === 0xFFFFFFFF) {
+        throw new Error('Архивы ZIP64 не поддерживаются');
+      }
+
+      var lnameLen = dv.getUint16(localOff + 26, true);
+      var lextraLen = dv.getUint16(localOff + 28, true);
+      var dataStart = localOff + 30 + lnameLen + lextraLen;
+      var raw = bytes.subarray(dataStart, dataStart + compSize);
+
+      var data;
+      if (method === 0) data = raw;
+      else if (method === 8) data = await inflateRaw(raw);
+      else throw new Error('Неподдерживаемый метод сжатия: ' + method);
+
+      if (!/\/$/.test(name)) out.push({ name: name, data: data });
+      if (onProgress) onProgress(i + 1, count);
+      p += 46 + nameLen + extraLen + commentLen;
+    }
+    return out;
+  }
+
+  global.Zip = {
+    create: create, read: read, crc32: crc32,
+    utf8Encode: utf8Encode, utf8Decode: utf8Decode
+  };
 })(window);
 
 </script>
@@ -1781,6 +2247,7 @@ svg.ico{width:20px;height:20px;fill:currentColor;flex:none;display:block}
   const state = {
     tracks: [],
     playlists: [],
+    albums: [],
     recent: [],
     filter: '',
     search: '',
@@ -1847,9 +2314,10 @@ svg.ico{width:20px;height:20px;fill:currentColor;flex:none;display:block}
   }
 
   async function loadState() {
-    const [tracks, playlists, meta] = await Promise.all([
+    const [tracks, playlists, albums, meta] = await Promise.all([
       DB.getAllTracks(),
       DB.getAllPlaylists(),
+      DB.getAllAlbums(),
       Promise.all([
         DB.getMeta('volume', 0.8),
         DB.getMeta('recent', []),
@@ -1859,6 +2327,7 @@ svg.ico{width:20px;height:20px;fill:currentColor;flex:none;display:block}
     ]);
     state.tracks = tracks || [];
     state.playlists = playlists || [];
+    state.albums = albums || [];
     state.volume = typeof meta[0] === 'number' ? meta[0] : 0.8;
     state.recent = Array.isArray(meta[1]) ? meta[1] : [];
     state.repeat = meta[2] || 'off';
@@ -1879,6 +2348,11 @@ svg.ico{width:20px;height:20px;fill:currentColor;flex:none;display:block}
       const before = pl.trackIds.length;
       pl.trackIds = pl.trackIds.filter((id) => valid.has(id));
       if (pl.trackIds.length !== before) DB.putPlaylist(pl);
+    });
+    (state.albums || []).forEach((al) => {
+      const before = al.trackIds.length;
+      al.trackIds = al.trackIds.filter((id) => valid.has(id));
+      if (al.trackIds.length !== before) DB.putAlbum(al);
     });
     return liked;
   }
@@ -1923,8 +2397,7 @@ svg.ico{width:20px;height:20px;fill:currentColor;flex:none;display:block}
   }
 
   /* ============================ accents (цвет из обложки) ============================ */
-  function accentFor(track) {
-    const coverUrl = track ? Files.coverUrl(track) : null;
+  function accentForCover(coverUrl) {
     if (!coverUrl) return Promise.resolve(null);
     if (state.accentCache.has(coverUrl)) return Promise.resolve(state.accentCache.get(coverUrl));
     return new Promise((resolve) => {
@@ -1950,6 +2423,10 @@ svg.ico{width:20px;height:20px;fill:currentColor;flex:none;display:block}
       img.onerror = () => resolve(null);
       img.src = coverUrl;
     });
+  }
+
+  function accentFor(track) {
+    return track ? accentForCover(Files.coverUrl(track)) : Promise.resolve(null);
   }
 
   function applyAccent(rgb) {
@@ -1991,6 +2468,14 @@ svg.ico{width:20px;height:20px;fill:currentColor;flex:none;display:block}
         route: '#/playlist/' + pl.id, playlist: pl, active: state.route.name === 'playlist' && state.route.id === pl.id
       });
     });
+    state.albums.forEach((al) => {
+      items.push({
+        id: al.id, name: al.name,
+        sub: `Альбом · ${al.trackIds.length} ${plural(al.trackIds.length, 'трек', 'трека', 'треков')}`,
+        route: '#/release/' + al.id, album: al,
+        active: state.route.name === 'release' && state.route.id === al.id
+      });
+    });
 
     const filtered = items.filter((it) => !q || norm(it.name).includes(norm(q)));
 
@@ -1998,14 +2483,27 @@ svg.ico{width:20px;height:20px;fill:currentColor;flex:none;display:block}
       let art;
       if (it.liked) art = `<div class="lib-art liked">${ICON('heart-fill')}</div>`;
       else if (it.icon) art = `<div class="lib-art">${ICON(it.icon)}</div>`;
-      else art = playlistArtHtml(it.playlist, 'lib-art');
-      return `<div class="lib-item ${it.active ? 'active' : ''}" data-route="${it.route}" ${it.playlist ? `data-menu-playlist="${it.playlist.id}"` : ''}>
+      else if (it.album) {
+        const cu = albumCoverUrl(it.album);
+        art = `<div class="lib-art">${cu ? `<img src="${cu}" alt="">` : ICON('disc')}</div>`;
+      } else art = playlistArtHtml(it.playlist, 'lib-art');
+
+      let menuBtn = '';
+      let menuAttr = '';
+      if (it.playlist) {
+        menuAttr = `data-menu-playlist="${it.playlist.id}"`;
+        menuBtn = `<button class="icon-btn" data-action="playlist-menu" data-id="${it.playlist.id}" title="Ещё">${ICON('more')}</button>`;
+      } else if (it.album) {
+        menuAttr = `data-menu-album="${it.album.id}"`;
+        menuBtn = `<button class="icon-btn" data-action="album-menu" data-id="${it.album.id}" title="Ещё">${ICON('more')}</button>`;
+      }
+      return `<div class="lib-item ${it.active ? 'active' : ''}" data-route="${it.route}" ${menuAttr}>
         ${art}
         <div class="lib-text">
           <div class="lib-name">${esc(it.name)}</div>
           <div class="lib-sub">${esc(it.sub)}</div>
         </div>
-        ${it.playlist ? `<button class="icon-btn" data-action="playlist-menu" data-id="${it.playlist.id}" title="Ещё">${ICON('more')}</button>` : ''}
+        ${menuBtn}
       </div>`;
     }).join('');
 
@@ -2062,6 +2560,7 @@ svg.ico{width:20px;height:20px;fill:currentColor;flex:none;display:block}
     if (r.name === 'library') return renderLibraryView();
     if (r.name === 'liked') return renderLikedView();
     if (r.name === 'playlist') return renderPlaylistView(r.id);
+    if (r.name === 'release' && r.id) return renderReleaseView(r.id);
     if (r.name === 'album' && r.id) return renderCollectionView('album', decodeURIComponent(r.id));
     if (r.name === 'artist' && r.id) return renderCollectionView('artist', decodeURIComponent(r.id));
     return renderHomeView();
@@ -2154,6 +2653,50 @@ svg.ico{width:20px;height:20px;fill:currentColor;flex:none;display:block}
         ${pls.map(playlistCard).join('')}
       </div>
     </div>`;
+
+    const derived = derivedAlbums();
+    if (state.albums.length || derived.length) {
+      const albumItems = state.albums.map((al) => cardHtml({
+        route: '#/release/' + al.id,
+        title: al.name,
+        sub: `${al.artist ? esc(al.artist) + ' · ' : ''}${al.trackIds.length} ${plural(al.trackIds.length, 'трек', 'трека', 'треков')}`,
+        art: albumCoverUrl(al) ? `<div class="card-art"><img src="${albumCoverUrl(al)}" alt="" loading="lazy"></div>` : `<div class="card-art">${ICON('disc')}</div>`,
+        playCtx: 'release:' + al.id,
+        menuAttr: `data-menu-album="${al.id}"`
+      }));
+      const derivedItems = derived.slice(0, 8).map((d) => cardHtml({
+        route: '#/album/' + encodeURIComponent(d.name),
+        title: d.name,
+        sub: `${esc(d.artist)} · ${d.tracks.length} ${plural(d.tracks.length, 'трек', 'трека', 'треков')}`,
+        art: artHtml(d.tracks[0], 'card-art'),
+        playCtx: 'album:' + encodeURIComponent(d.name)
+      }));
+      html += `<div class="section">
+        <div class="section-head"><h2 class="section-title">Альбомы</h2>
+        <button class="link-btn" data-action="new-album">Создать альбом</button></div>
+        <div class="row-scroll">
+          <div class="card create-card" data-action="new-album">
+            <div class="card-art create-art">${ICON('plus')}</div>
+            <div class="card-name">Новый альбом</div>
+            <div class="card-sub">Обложка, название, треки</div>
+          </div>
+          ${albumItems.join('')}
+          ${derivedItems.join('')}
+        </div>
+      </div>`;
+    } else {
+      html += `<div class="section">
+        <div class="section-head"><h2 class="section-title">Альбомы</h2>
+        <button class="link-btn" data-action="new-album">Создать альбом</button></div>
+        <div class="row-scroll">
+          <div class="card create-card" data-action="new-album">
+            <div class="card-art create-art">${ICON('plus')}</div>
+            <div class="card-name">Новый альбом</div>
+            <div class="card-sub">Обложка, название, треки</div>
+          </div>
+        </div>
+      </div>`;
+    }
 
     html += `<div class="section">
       <div class="section-head">
@@ -2288,7 +2831,10 @@ svg.ico{width:20px;height:20px;fill:currentColor;flex:none;display:block}
       art: `<div class="hero-art">${ICON('note')}</div>`,
       sub: `<b>${all.length}</b> ${plural(all.length, 'трек', 'трека', 'треков')} <span class="dot">•</span> ${fmtTime(totalMs)}`,
       ctx: 'library',
-      extra: `<button class="btn-green" data-action="upload" style="margin-left:auto">${ICON('upload')}Добавить</button>`
+      extra: `<div style="margin-left:auto;display:flex;gap:8px">
+        <button class="btn-green ghost" data-action="new-album">${ICON('disc')}Создать альбом</button>
+        <button class="btn-green" data-action="upload">${ICON('upload')}Добавить</button>
+      </div>`
     });
     html += `<div class="section" style="padding-left:16px;padding-right:16px">
       <div class="toolbar">
@@ -2384,6 +2930,56 @@ svg.ico{width:20px;height:20px;fill:currentColor;flex:none;display:block}
         DB.putPlaylist(pl).then(() => { renderSidebar(); toast('Плейлист переименован'); renderPlaylistView(pl.id); });
       });
     }
+  }
+
+  /* ---------- альбом (пользовательский) ---------- */
+  function renderReleaseView(id) {
+    setActiveNav('');
+    const al = albumById(id);
+    if (!al) {
+      el.content.innerHTML = `<div class="view"><div class="empty" style="margin-top:50px">${ICON('disc')}<h3>Альбом не найден</h3><p>Возможно, он был удалён.</p><div class="empty-actions"><button class="btn-green" data-route="#/home">На главную</button></div></div></div>`;
+      return;
+    }
+    const tracks = albumTracks(al);
+    state.currentList = tracks;
+    state.currentContext = { key: 'release:' + al.id, title: al.name };
+
+    const totalMs = tracks.reduce((s2, t) => s2 + (t.duration || 0), 0);
+    const cover = albumCoverUrl(al);
+    const art = cover
+      ? `<div class="hero-art"><img src="${cover}" alt=""></div>`
+      : `<div class="hero-art">${ICON('disc')}</div>`;
+
+    let html = `<div class="view">`;
+    html += viewHeader({
+      kicker: 'Альбом',
+      title: al.name,
+      art,
+      sub: `${al.artist ? `<b>${esc(al.artist)}</b> <span class="dot">•</span> ` : ''}${al.year ? esc(al.year) + ' <span class="dot">•</span> ' : ''}${tracks.length} ${plural(tracks.length, 'трек', 'трека', 'треков')} <span class="dot">•</span> ${fmtTime(totalMs)}`,
+      ctx: 'release:' + al.id,
+      menuId: al.id
+    });
+    html += `<div class="section" style="padding-left:16px;padding-right:16px">`;
+    if (!tracks.length) {
+      html += `<div class="empty">
+        ${ICON('disc')}
+        <h3>В альбоме пока нет треков</h3>
+        <p>Добавьте треки из библиотеки или загрузите новую музыку.</p>
+        <div class="empty-actions">
+          <button class="btn-green" data-action="album-add-tracks" data-id="${al.id}">${ICON('plus')}Добавить треки</button>
+          <button class="btn-green ghost" data-action="upload">${ICON('upload')}Загрузить</button>
+        </div></div>`;
+    } else {
+      html += `<div class="toolbar">
+        <button class="link-btn" data-action="album-add-tracks" data-id="${al.id}">+ Добавить треки</button>
+        <button class="link-btn" data-action="edit-album" data-id="${al.id}">Изменить сведения</button>
+      </div>`;
+      html += trackTable(tracks, { title: al.name, hideDate: true });
+    }
+    html += `</div></div>`;
+    el.content.innerHTML = html;
+    applyAccent(null);
+    if (cover) accentForCover(cover).then((rgb) => { if (rgb) applyAccent(rgb); });
   }
 
   /* ---------- search ---------- */
@@ -2485,7 +3081,9 @@ svg.ico{width:20px;height:20px;fill:currentColor;flex:none;display:block}
   /* ---------- album / artist (виртуальные страницы) ---------- */
   function renderCollectionView(kind, value) {
     setActiveNav('');
-    const match = (t) => norm(kind === 'album' ? t.album : t.artist) === norm(value);
+    const match = (t) => (kind === 'album'
+      ? (!t.albumId && norm(t.album) === norm(value))
+      : norm(t.artist) === norm(value));
     const tracks = sortedTracks(state.tracks.filter(match));
     if (!tracks.length) {
       el.content.innerHTML = `<div class="view"><div class="empty" style="margin-top:50px">${ICON('search')}<h3>Ничего не найдено</h3><p>В библиотеке нет треков с таким ${kind === 'album' ? 'альбомом' : 'исполнителем'}.</p><div class="empty-actions"><button class="btn-green" data-route="#/home">На главную</button></div></div></div>`;
@@ -2554,6 +3152,8 @@ svg.ico{width:20px;height:20px;fill:currentColor;flex:none;display:block}
     const dur = Player.audio.duration;
     if (isFinite(dur) && dur > 0) $('#durTime').textContent = fmtTime(dur * 1000);
     else $('#durTime').textContent = cur ? fmtTime(cur.duration) : '0:00';
+
+    syncNP(false);
   }
 
   function syncProgress() {
@@ -2603,11 +3203,13 @@ svg.ico{width:20px;height:20px;fill:currentColor;flex:none;display:block}
       renderQueue();
       updateMediaSession();
       addRecent(Player.current());
+      syncNP(true);
     } else if (type === 'play') {
       syncPlayerControls();
       syncPlayingRows();
     } else if (type === 'time') {
       syncProgress();
+      syncNPProgress();
       if (Player.audio.duration && !isFinite(Player.state.duration)) syncPlayerControls();
     } else if (type === 'queue') {
       syncPlayingRows();
@@ -2929,6 +3531,7 @@ svg.ico{width:20px;height:20px;fill:currentColor;flex:none;display:block}
     if (ctx === 'library') return sortedTracks(state.tracks);
     if (ctx === 'liked') return likedTracks();
     if (ctx.indexOf('playlist:') === 0) return playlistTracks(playlistById(ctx.slice(9)));
+    if (ctx.indexOf('release:') === 0) return albumTracks(albumById(ctx.slice(8)));
     if (ctx.indexOf('album:') === 0) {
       const v = decodeURIComponent(ctx.slice(6));
       return sortedTracks(state.tracks.filter((t) => norm(t.album) === norm(v)));
@@ -2944,6 +3547,7 @@ svg.ico{width:20px;height:20px;fill:currentColor;flex:none;display:block}
     if (ctx === 'library') return 'Все треки';
     if (ctx === 'liked') return 'Мне нравится';
     if (ctx.indexOf('playlist:') === 0) { const p = playlistById(ctx.slice(9)); return p ? p.name : 'Плейлист'; }
+    if (ctx.indexOf('release:') === 0) { const a = albumById(ctx.slice(8)); return a ? a.name : 'Альбом'; }
     if (ctx.indexOf('album:') === 0) return decodeURIComponent(ctx.slice(6));
     if (ctx.indexOf('artist:') === 0) return decodeURIComponent(ctx.slice(7));
     return state.currentContext ? state.currentContext.title : '';
@@ -3108,7 +3712,9 @@ svg.ico{width:20px;height:20px;fill:currentColor;flex:none;display:block}
         icon: isLiked(track.id) ? 'heart-fill' : 'heart',
         action: () => toggleLike(track.id)
       },
-      { text: 'Добавить в плейлист…', icon: 'plus', action: () => choosePlaylist([track.id]) }
+      { text: 'Добавить в плейлист…', icon: 'plus', action: () => choosePlaylist([track.id]) },
+      { text: 'Добавить в альбом…', icon: 'disc', action: () => chooseAlbum([track.id]) },
+      { text: 'Изменить информацию…', icon: 'edit', action: () => editTrackModal(track) }
     ];
     if (state.route.name === 'playlist' && state.route.id !== LIKED_ID) {
       const pl = playlistById(state.route.id);
@@ -3126,6 +3732,15 @@ svg.ico{width:20px;height:20px;fill:currentColor;flex:none;display:block}
     }
     if (state.route.name === 'liked') {
       items.push({ text: 'Убрать из «Мне нравится»', icon: 'heart', action: () => toggleLike(track.id) });
+    }
+    if (state.route.name === 'release') {
+      const al = albumById(state.route.id);
+      if (al && al.trackIds.includes(track.id)) {
+        items.push({
+          text: 'Убрать из альбома', icon: 'close',
+          action: () => removeTracksFromAlbum(al, [track.id])
+        });
+      }
     }
     items.push({ sep: true });
     items.push({ text: 'Свойства файла', icon: 'note', action: () => showTrackInfo(track) });
@@ -3217,16 +3832,31 @@ svg.ico{width:20px;height:20px;fill:currentColor;flex:none;display:block}
         if (pl) playlistMenu(pl, e);
         return;
       }
+      const albumBtn = e.target.closest('[data-action="album-menu"]');
+      if (albumBtn) {
+        e.stopPropagation();
+        const al = albumById(albumBtn.dataset.id);
+        if (al) albumMenu(al, e);
+        return;
+      }
       const item = e.target.closest('[data-route]');
       if (item) go(item.dataset.route);
     });
 
     el.libraryList.addEventListener('contextmenu', (e) => {
       const item = e.target.closest('[data-menu-playlist]');
-      if (!item) return;
-      e.preventDefault();
-      const pl = playlistById(item.dataset.menuPlaylist);
-      if (pl) playlistMenu(pl, e);
+      if (item) {
+        e.preventDefault();
+        const pl = playlistById(item.dataset.menuPlaylist);
+        if (pl) playlistMenu(pl, e);
+        return;
+      }
+      const alItem = e.target.closest('[data-menu-album]');
+      if (alItem) {
+        e.preventDefault();
+        const al = albumById(alItem.dataset.menuAlbum);
+        if (al) albumMenu(al, e);
+      }
     });
 
     /* --- шапка --- */
@@ -3272,6 +3902,13 @@ svg.ico{width:20px;height:20px;fill:currentColor;flex:none;display:block}
         e.preventDefault();
         const pl = playlistById(card.dataset.menuPlaylist);
         if (pl) playlistMenu(pl, e);
+        return;
+      }
+      const albumCard = e.target.closest('[data-menu-album]');
+      if (albumCard) {
+        e.preventDefault();
+        const al = albumById(albumCard.dataset.menuAlbum);
+        if (al) albumMenu(al, e);
       }
     });
 
@@ -3314,6 +3951,25 @@ svg.ico{width:20px;height:20px;fill:currentColor;flex:none;display:block}
     });
 
     $('#scrim').addEventListener('click', () => { toggleQueue(false); toggleSidebar(false); });
+
+    /* --- полноэкранный плеер: перемотка --- */
+    const npInput = $('#npProgressInput');
+    if (npInput) {
+      npInput.addEventListener('input', (e) => {
+        const p = Number(e.target.value) / 1000;
+        $('#npProgressFill').style.width = (p * 100) + '%';
+        const dur = isFinite(Player.audio.duration) ? Player.audio.duration : 0;
+        $('#npCurTime').textContent = fmtTime(p * dur * 1000);
+      });
+      npInput.addEventListener('change', (e) => Player.seekPercent(Number(e.target.value) / 1000));
+    }
+
+    /* --- импорт архива --- */
+    $('#zipInput').addEventListener('change', (e) => {
+      const file = e.target.files && e.target.files[0];
+      e.target.value = '';
+      if (file) importDialog(file);
+    });
 
     /* --- горячие клавиши --- */
     document.addEventListener('keydown', onKeyDown);
@@ -3372,6 +4028,55 @@ svg.ico{width:20px;height:20px;fill:currentColor;flex:none;display:block}
       case 'new-playlist': promptPlaylistName().then((name) => { if (name) createPlaylist(name); }); break;
       case 'route-library': go('#/library'); break;
       case 'toggle-sidebar': toggleSidebar(); break;
+      case 'open-np': openNP(); break;
+      case 'close-np': closeNP(); break;
+      case 'np-album': {
+        const cur0 = Player.current();
+        closeNP();
+        if (!cur0) break;
+        if (cur0.albumId && albumById(cur0.albumId)) go('#/release/' + cur0.albumId);
+        else go('#/album/' + encodeURIComponent(cur0.album || 'Сингл'));
+        break;
+      }
+      case 'np-edit': {
+        const cur1 = Player.current();
+        if (cur1) editTrackModal(cur1);
+        break;
+      }
+      case 'np-menu': {
+        const cur2 = Player.current();
+        if (!cur2) break;
+        showMenu(window.innerWidth - 260, 70, [
+          { text: 'Изменить информацию…', icon: 'edit', action: () => editTrackModal(cur2) },
+          { text: isLiked(cur2.id) ? 'Убрать из «Мне нравится»' : 'В «Мне нравится»', icon: 'heart', action: () => toggleLike(cur2.id) },
+          { text: 'Добавить в плейлист…', icon: 'plus', action: () => choosePlaylist([cur2.id]) },
+          { text: 'Добавить в альбом…', icon: 'disc', action: () => chooseAlbum([cur2.id]) },
+          { text: 'Свойства файла', icon: 'note', action: () => showTrackInfo(cur2) }
+        ]);
+        break;
+      }
+      case 'new-album': createAlbum(); break;
+      case 'album-add-tracks': {
+        const al0 = albumById(actionEl.dataset.id);
+        if (!al0) break;
+        pickTracks({ title: `Добавить в «${al0.name}»`, excludeIds: al0.trackIds }).then((ids) => {
+          if (ids && ids.length) addTracksToAlbum(al0, ids);
+        });
+        break;
+      }
+      case 'edit-album': {
+        const al1 = albumById(actionEl.dataset.id);
+        if (al1) editAlbum(al1);
+        break;
+      }
+      case 'album-menu': {
+        e && e.stopPropagation();
+        const al2 = albumById(actionEl.dataset.id);
+        if (al2) albumMenu(al2, e);
+        break;
+      }
+      case 'export-zip': exportLibrary(); break;
+      case 'import-zip': $('#zipInput').click(); break;
       case 'toggle': Player.toggle(); break;
       case 'next': Player.next(true); break;
       case 'prev': Player.prev(); break;
@@ -3430,7 +4135,9 @@ svg.ico{width:20px;height:20px;fill:currentColor;flex:none;display:block}
       }
       case 'hero-menu': {
         const pl = playlistById(actionEl.dataset.id);
-        if (pl) playlistMenu(pl, e);
+        if (pl) { playlistMenu(pl, e); break; }
+        const al3 = albumById(actionEl.dataset.id);
+        if (al3) albumMenu(al3, e);
         break;
       }
       case 'playlist-menu': {
@@ -3481,6 +4188,13 @@ svg.ico{width:20px;height:20px;fill:currentColor;flex:none;display:block}
     if (typing) return;
     if (e.metaKey || e.ctrlKey || e.altKey) return;
 
+    if (e.key === 'Escape') {
+      if (isNPOpen()) { closeNP(); return; }
+      closeModal();
+      hideMenu();
+      return;
+    }
+
     switch (e.key) {
       case ' ': e.preventDefault(); Player.toggle(); break;
       case 'ArrowRight': if (e.shiftKey) Player.next(true); else Player.seek(Player.audio.currentTime + 5); break;
@@ -3497,6 +4211,814 @@ svg.ico{width:20px;height:20px;fill:currentColor;flex:none;display:block}
     }
   }
 
+  /* ============================================================
+     ПОЛНОЭКРАННЫЙ ПЛЕЕР
+     ============================================================ */
+  function isNPOpen() { return $('#npFull').classList.contains('open'); }
+
+  function openNP() {
+    const np = $('#npFull');
+    if (!np) return;
+    requestAnimationFrame(() => {
+      np.classList.add('open');
+      np.setAttribute('aria-hidden', 'false');
+    });
+    document.body.classList.add('np-open');
+    syncNP(true);
+  }
+
+  function closeNP() {
+    const np = $('#npFull');
+    if (!np) return;
+    np.classList.remove('open');
+    np.setAttribute('aria-hidden', 'true');
+    document.body.classList.remove('np-open');
+  }
+
+  function syncNP(forceAccent) {
+    const np = $('#npFull');
+    if (!np) return;
+    const cur = Player.current();
+    const playing = Player.state.playing;
+
+    $('#npPlay').innerHTML = ICON(playing ? 'pause' : 'play');
+    $('#npShuffle').classList.toggle('on', Player.state.shuffle);
+    const rep = Player.state.repeat;
+    $('#npRepeat').innerHTML = ICON(rep === 'one' ? 'repeat-1' : 'repeat');
+    $('#npRepeat').classList.toggle('on', rep !== 'off');
+
+    if (!cur) {
+      $('#npFullTitle').textContent = 'Ничего не играет';
+      $('#npFullArtist').textContent = '';
+      $('#npFullArt').innerHTML = ICON('note');
+      $('#npFullAlbum').textContent = 'Альбом';
+      $('#npFullLike').innerHTML = ICON('heart');
+      $('#npFullLike').classList.remove('liked');
+      syncNPProgress();
+      return;
+    }
+
+    $('#npFullTitle').textContent = cur.title;
+    $('#npFullArtist').textContent = cur.artist;
+    $('#npFullAlbum').textContent = cur.album || 'Альбом';
+    const cover = Files.coverUrl(cur);
+    $('#npFullArt').innerHTML = cover ? `<img src="${cover}" alt="">` : ICON('note');
+    const like = $('#npFullLike');
+    like.classList.toggle('liked', isLiked(cur.id));
+    like.innerHTML = ICON(isLiked(cur.id) ? 'heart-fill' : 'heart');
+
+    if (forceAccent) {
+      accentFor(cur).then((rgb) => {
+        if (!rgb) return;
+        $('#npFullBg').style.background =
+          `linear-gradient(180deg, rgba(${rgb},.95) 0px, rgba(${rgb},.42) 42%, #0b0b0b 76%)`;
+      });
+    }
+    syncNPProgress();
+  }
+
+  function syncNPProgress() {
+    const audio = Player.audio;
+    const dur = isFinite(audio.duration) && audio.duration > 0 ? audio.duration : 0;
+    const cur = audio.currentTime || 0;
+    const p = dur ? cur / dur : 0;
+    const fill = $('#npProgressFill');
+    if (!fill) return;
+    fill.style.width = (p * 100).toFixed(2) + '%';
+    const input = $('#npProgressInput');
+    if (document.activeElement !== input) input.value = String(Math.round(p * 1000));
+    $('#npCurTime').textContent = fmtTime(cur * 1000);
+    $('#npDurTime').textContent = dur ? fmtTime(dur * 1000)
+      : (Player.current() ? fmtTime(Player.current().duration) : '0:00');
+  }
+
+  /* ============================================================
+     РЕДАКТИРОВАНИЕ МЕТАДАННЫХ
+     ============================================================ */
+  function readAsBlob(file, maxSize) {
+    return new Promise((resolve) => {
+      if (!file || !/^image\//.test(file.type || '')) { resolve(null); return; }
+      let url = null;
+      try { url = URL.createObjectURL(file); } catch (e) { resolve(file); return; }
+      const img = new Image();
+      const finish = (blob) => { if (url) URL.revokeObjectURL(url); resolve(blob); };
+      img.onload = () => {
+        try {
+          const scale = Math.min(1, (maxSize || 640) / Math.max(img.width || 1, img.height || 1));
+          const w = Math.max(1, Math.round((img.width || 600) * scale));
+          const h = Math.max(1, Math.round((img.height || 600) * scale));
+          const c = document.createElement('canvas');
+          c.width = w; c.height = h;
+          const ctx = c.getContext('2d');
+          if (!ctx) { finish(file); return; }
+          ctx.drawImage(img, 0, 0, w, h);
+          c.toBlob((blob) => finish(blob || file), 'image/jpeg', 0.88);
+        } catch (e) { finish(file); }
+      };
+      img.onerror = () => finish(file);
+      img.src = url;
+    });
+  }
+
+  function editTrackModal(track) {
+    let pendingCover;            // undefined — не менять, null — удалить, Blob — новая
+    const coverUrl = Files.coverUrl(track);
+
+    const back = openModal(`
+      <h3>Изменить информацию</h3>
+      <p class="sub">${esc(track.fileName)}</p>
+      <div class="cover-edit">
+        <div class="cover-preview" data-preview>${coverUrl ? `<img src="${coverUrl}" alt="">` : ICON('note')}</div>
+        <div class="cover-edit-btns">
+          <button class="btn-green" data-pick-cover>${ICON('image')} Обложка</button>
+          <button class="btn-link" data-clear-cover>Убрать обложку</button>
+        </div>
+      </div>
+      <label class="field"><span>Название</span><input type="text" data-f="title" value="${esc(track.title)}"></label>
+      <label class="field"><span>Исполнитель</span><input type="text" data-f="artist" value="${esc(track.artist)}"></label>
+      <div class="field-row">
+        <label class="field"><span>Альбом</span><input type="text" data-f="album" value="${esc(track.album)}"></label>
+        <label class="field"><span>Год</span><input type="text" data-f="year" value="${esc(track.year || '')}"></label>
+      </div>
+      <div class="field-row">
+        <label class="field"><span>Жанр</span><input type="text" data-f="genre" value="${esc(track.genre || '')}"></label>
+        <label class="field"><span>№ в альбоме</span><input type="text" data-f="trackNo" value="${esc(track.trackNo || '')}"></label>
+      </div>
+      <div class="modal-actions">
+        <button class="btn-secondary" data-cancel>Отмена</button>
+        <button class="btn-green" data-save>Сохранить</button>
+      </div>
+    `);
+
+    const preview = $('[data-preview]', back);
+    const coverInput = $('#coverInput');
+
+    $('[data-pick-cover]', back).addEventListener('click', () => {
+      coverInput.onchange = async () => {
+        const file = coverInput.files && coverInput.files[0];
+        coverInput.value = '';
+        if (!file) return;
+        const blob = await readAsBlob(file, 640);
+        if (!blob) { toast('Не удалось прочитать изображение', 'err'); return; }
+        pendingCover = blob;
+        preview.innerHTML = `<img src="${URL.createObjectURL(blob)}" alt="">`;
+      };
+      coverInput.click();
+    });
+
+    $('[data-clear-cover]', back).addEventListener('click', () => {
+      pendingCover = null;
+      preview.innerHTML = ICON('note');
+    });
+
+    $('[data-cancel]', back).addEventListener('click', closeModal);
+
+    $('[data-save]', back).addEventListener('click', async () => {
+      const val = (f) => {
+        const input = $(`[data-f="${f}"]`, back);
+        return input ? input.value.trim() : '';
+      };
+      track.title = val('title') || Tags.prettyTitle(track.fileName);
+      track.artist = val('artist') || 'Неизвестный исполнитель';
+      track.album = val('album') || 'Сингл';
+      track.year = val('year');
+      track.genre = val('genre');
+      track.trackNo = val('trackNo');
+      if (pendingCover !== undefined) track.coverBlob = pendingCover;
+
+      await DB.putTrack(track);
+      if (pendingCover !== undefined) Files.releaseCover(track.id);
+      closeModal();
+      renderSidebar();
+      renderView();
+      syncPlayerControls();
+      toast('Информация о треке обновлена');
+    });
+  }
+
+  /* ============================================================
+     АЛЬБОМЫ
+     ============================================================ */
+  const albumById = (id) => state.albums.find((a) => a.id === id);
+  const albumTracks = (al) => (al ? al.trackIds.map(trackById).filter(Boolean) : []);
+
+  function derivedAlbums() {
+    const map = new Map();
+    state.tracks.forEach((t) => {
+      if (t.albumId) return;                       // трек уже в своём альбоме
+      const name = t.album || 'Сингл';
+      const key = norm(name) + '|' + norm(t.albumArtist || t.artist);
+      if (!map.has(key)) map.set(key, { key, name, artist: t.albumArtist || t.artist, tracks: [] });
+      map.get(key).tracks.push(t);
+    });
+    return Array.from(map.values());
+  }
+
+  function albumCoverUrl(al) {
+    if (al.coverBlob) return Files.coverUrlFromBlob(al.coverBlob, 'album-' + al.id);
+    const first = albumTracks(al)[0];
+    return first ? Files.coverUrl(first) : null;
+  }
+
+  /** Модалка создания/редактирования альбома. Возвращает данные или null. */
+  function albumFormModal(album) {
+    return new Promise((resolve) => {
+      let coverBlob = album ? album.coverBlob || null : null;
+      let coverTouched = false;
+      let localUrl = coverBlob ? URL.createObjectURL(coverBlob) : null;
+
+      const back = openModal(`
+        <h3>${album ? 'Сведения об альбоме' : 'Новый альбом'}</h3>
+        <p class="sub">Альбом объединяет треки и может иметь собственную обложку.</p>
+        <div class="cover-edit">
+          <div class="cover-preview" data-preview>${localUrl ? `<img src="${localUrl}" alt="">` : ICON('disc')}</div>
+          <div class="cover-edit-btns">
+            <button class="btn-green" data-pick-cover>${ICON('image')} Обложка</button>
+            <button class="btn-link" data-clear-cover>Убрать</button>
+          </div>
+        </div>
+        <label class="field"><span>Название альбома</span><input type="text" data-f="name" value="${album ? esc(album.name) : ''}" placeholder="Например, «Летний плейлист 2026»"></label>
+        <div class="field-row">
+          <label class="field"><span>Исполнитель</span><input type="text" data-f="artist" value="${album ? esc(album.artist || '') : ''}"></label>
+          <label class="field"><span>Год</span><input type="text" data-f="year" value="${album ? esc(album.year || '') : ''}"></label>
+        </div>
+        ${album ? `<label class="check-row"><input type="checkbox" data-apply checked> Применить название и исполнителя к трекам альбома</label>` : ''}
+        <div class="modal-actions">
+          <button class="btn-secondary" data-cancel>Отмена</button>
+          <button class="btn-green" data-save>${album ? 'Сохранить' : 'Создать'}</button>
+        </div>
+      `);
+
+      const preview = $('[data-preview]', back);
+      const nameInput = $('[data-f="name"]', back);
+      if (nameInput) nameInput.focus();
+
+      $('[data-pick-cover]', back).addEventListener('click', () => {
+        const input = $('#coverInput');
+        input.onchange = async () => {
+          const file = input.files && input.files[0];
+          input.value = '';
+          if (!file) return;
+          const blob = await readAsBlob(file, 640);
+          if (!blob) { toast('Не удалось прочитать изображение', 'err'); return; }
+          coverBlob = blob;
+          coverTouched = true;
+          preview.innerHTML = `<img src="${URL.createObjectURL(blob)}" alt="">`;
+        };
+        input.click();
+      });
+
+      $('[data-clear-cover]', back).addEventListener('click', () => {
+        coverBlob = null;
+        coverTouched = true;
+        preview.innerHTML = ICON('disc');
+      });
+
+      const done = (value) => {
+        if (localUrl) URL.revokeObjectURL(localUrl);
+        closeModal();
+        resolve(value);
+      };
+
+      $('[data-cancel]', back).addEventListener('click', () => done(null));
+      $('[data-save]', back).addEventListener('click', () => {
+        const name = ($('[data-f="name"]', back).value || '').trim();
+        if (!name) { toast('Укажите название альбома', 'err'); return; }
+        done({
+          name,
+          artist: ($('[data-f="artist"]', back).value || '').trim(),
+          year: ($('[data-f="year"]', back).value || '').trim(),
+          coverBlob: coverBlob,
+          coverTouched,
+          applyToTracks: album ? !!$('[data-apply]', back).checked : true
+        });
+      });
+      back.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' && e.target.tagName === 'INPUT') { e.preventDefault(); $('[data-save]', back).click(); }
+      });
+    });
+  }
+
+  async function createAlbum() {
+    const data = await albumFormModal(null);
+    if (!data) return;
+    const al = {
+      id: uid(),
+      name: data.name,
+      artist: data.artist,
+      year: data.year,
+      coverBlob: data.coverBlob || null,
+      trackIds: [],
+      createdAt: Date.now()
+    };
+    state.albums.push(al);
+    await DB.putAlbum(al);
+    renderSidebar();
+    toast(`Альбом «${al.name}» создан`);
+    go('#/release/' + al.id);
+    if (state.tracks.length) {
+      const ids = await pickTracks({ title: `Добавить треки в «${al.name}»` });
+      if (ids && ids.length) await addTracksToAlbum(al, ids);
+    }
+  }
+
+  async function editAlbum(album) {
+    const data = await albumFormModal(album);
+    if (!data) return;
+    album.name = data.name;
+    album.artist = data.artist;
+    album.year = data.year;
+    if (data.coverTouched) album.coverBlob = data.coverBlob;
+    await DB.putAlbum(album);
+
+    if (data.applyToTracks) {
+      for (const t of albumTracks(album)) {
+        t.album = album.name;
+        if (album.artist) t.albumArtist = album.artist;
+        if (album.year) t.year = album.year;
+        await DB.putTrack(t);
+      }
+    }
+    Files.releaseCover('album-' + album.id);
+    renderSidebar();
+    renderView();
+    syncPlayerControls();
+    toast('Альбом обновлён');
+  }
+
+  async function addTracksToAlbum(album, ids) {
+    let added = 0;
+    ids.forEach((id) => {
+      if (album.trackIds.indexOf(id) === -1) { album.trackIds.push(id); added++; }
+    });
+    await DB.putAlbum(album);
+    for (const id of album.trackIds) {
+      const t = trackById(id);
+      if (!t) continue;
+      t.albumId = album.id;
+      t.album = album.name;
+      if (album.artist) t.albumArtist = album.artist;
+      if (album.year) t.year = album.year;
+      if (album.coverBlob && !t.coverBlob) t.coverBlob = album.coverBlob;
+      await DB.putTrack(t);
+    }
+    renderSidebar();
+    renderView();
+    if (added) toast(`Добавлено в «${album.name}»: ${added}`);
+    return added;
+  }
+
+  async function removeTracksFromAlbum(album, ids) {
+    album.trackIds = album.trackIds.filter((id) => ids.indexOf(id) === -1);
+    await DB.putAlbum(album);
+    for (const id of ids) {
+      const t = trackById(id);
+      if (t && t.albumId === album.id) { t.albumId = null; await DB.putTrack(t); }
+    }
+    renderSidebar();
+    renderView();
+    toast('Трек убран из альбома');
+  }
+
+  async function deleteAlbum(album) {
+    const ok = await confirmModal(`Удалить альбом «${album.name}»?`, 'Треки останутся в библиотеке, у них лишь сбросится привязка к альбому.', 'Удалить');
+    if (!ok) return;
+    state.albums = state.albums.filter((a) => a.id !== album.id);
+    await DB.deleteAlbum(album.id);
+    for (const t of state.tracks) {
+      if (t.albumId === album.id) { t.albumId = null; await DB.putTrack(t); }
+    }
+    Files.releaseCover('album-' + album.id);
+    renderSidebar();
+    toast('Альбом удалён');
+    if (state.route.name === 'release' && state.route.id === album.id) go('#/home');
+    else renderView();
+  }
+
+  function albumMenu(album, ev) {
+    const items = [
+      { text: 'Играть', icon: 'play', action: () => playCtx('release:' + album.id) },
+      { text: 'Добавить треки…', icon: 'plus', action: async () => {
+        const ids = await pickTracks({ title: `Добавить в «${album.name}»`, excludeIds: album.trackIds });
+        if (ids && ids.length) await addTracksToAlbum(album, ids);
+      } },
+      { sep: true },
+      { text: 'Сведения об альбоме…', icon: 'edit', action: () => editAlbum(album) },
+      { text: 'Удалить альбом', icon: 'trash', danger: true, action: () => deleteAlbum(album) }
+    ];
+    const r = ev.currentTarget.getBoundingClientRect();
+    showMenu(r.left - 180, r.bottom + 6, items);
+  }
+
+  /* ---------- выбор треков (чекбоксы) ---------- */
+  function pickTracks(opts) {
+    opts = opts || {};
+    return new Promise((resolve) => {
+      const excluded = new Set(opts.excludeIds || []);
+      const available = sortedTracks(state.tracks).filter((t) => !excluded.has(t.id));
+      const selected = new Set();
+
+      const rowHtml = (t) => `<label class="picker-item" data-id="${t.id}" data-hay="${esc(norm([t.title, t.artist, t.album].join(' ')))}">
+          <input type="checkbox" value="${t.id}">
+          ${artHtml(t, 'lib-art')}
+          <span class="lib-text">
+            <span class="lib-name">${esc(t.title)}</span>
+            <span class="lib-sub">${esc(t.artist)}${t.album ? ' • ' + esc(t.album) : ''}</span>
+          </span>
+        </label>`;
+
+      const back = openModal(`
+        <h3>${esc(opts.title || 'Выберите треки')}</h3>
+        <p class="sub">Отметьте треки, которые нужно добавить.</p>
+        <div class="modal-search">${ICON('search')}<input type="search" placeholder="Поиск в библиотеке" data-search></div>
+        <div class="modal-scroll" data-list>
+          ${available.length ? available.map(rowHtml).join('') : '<div class="picker-empty">В библиотеке пока нет треков.</div>'}
+        </div>
+        <div class="modal-actions">
+          <button class="btn-secondary" data-cancel>Отмена</button>
+          <button class="btn-green" data-ok disabled>Добавить (<span data-count>0</span>)</button>
+        </div>
+      `);
+      $('.modal', back).classList.add('wide');
+
+      const list = $('[data-list]', back);
+      const okBtn = $('[data-ok]', back);
+      const counter = $('[data-count]', back);
+
+      const refreshCount = () => {
+        counter.textContent = String(selected.size);
+        okBtn.disabled = selected.size === 0;
+        okBtn.style.opacity = selected.size === 0 ? '.5' : '1';
+      };
+
+      list.addEventListener('change', (e) => {
+        const cb = e.target.closest('input[type=checkbox]');
+        if (!cb) return;
+        if (cb.checked) selected.add(cb.value); else selected.delete(cb.value);
+        refreshCount();
+      });
+
+      const search = $('[data-search]', back);
+      if (search) {
+        search.addEventListener('input', () => {
+          const q = norm(search.value);
+          $$('.picker-item', list).forEach((row) => {
+            row.style.display = !q || row.dataset.hay.includes(q) ? '' : 'none';
+          });
+        });
+        search.focus();
+      }
+
+      $('[data-cancel]', back).addEventListener('click', () => { closeModal(); resolve(null); });
+      okBtn.addEventListener('click', () => { closeModal(); resolve(Array.from(selected)); });
+      back.addEventListener('mousedown', (e) => { if (e.target === back) resolve(null); });
+      refreshCount();
+    });
+  }
+
+  /* ---------- выбор альбома для трека ---------- */
+  function chooseAlbum(trackIds) {
+    const list = state.albums;
+    const back = openModal(`
+      <h3>Добавить в альбом</h3>
+      <p class="sub">Выберите альбом или создайте новый.</p>
+      ${list.length ? `<div class="pick-list">${list.map((al) => `
+        <button class="pick-item" data-pick="${al.id}">
+          <div class="lib-art">${albumCoverUrl(al) ? `<img src="${albumCoverUrl(al)}" alt="">` : ICON('disc')}</div>
+          <span class="lib-text"><span class="lib-name">${esc(al.name)}</span>
+          <span class="lib-sub">${al.trackIds.length} ${plural(al.trackIds.length, 'трек', 'трека', 'треков')}</span></span>
+        </button>`).join('')}</div>`
+      : '<p class="sub">Своих альбомов пока нет.</p>'}
+      <div class="modal-actions">
+        <button class="btn-secondary" data-cancel>Отмена</button>
+        <button class="btn-green" data-new>Новый альбом</button>
+      </div>`, null);
+
+    $('[data-cancel]', back).addEventListener('click', closeModal);
+    $('[data-new]', back).addEventListener('click', async () => {
+      closeModal();
+      const data = await albumFormModal(null);
+      if (!data) return;
+      const al = {
+        id: uid(), name: data.name, artist: data.artist, year: data.year,
+        coverBlob: data.coverBlob || null, trackIds: [], createdAt: Date.now()
+      };
+      state.albums.push(al);
+      await DB.putAlbum(al);
+      await addTracksToAlbum(al, trackIds);
+      toast(`Создан альбом «${al.name}»`);
+    });
+    $$('[data-pick]', back).forEach((btn) => {
+      btn.addEventListener('click', async () => {
+        const al = albumById(btn.dataset.pick);
+        closeModal();
+        if (al) await addTracksToAlbum(al, trackIds);
+      });
+    });
+  }
+
+  /* ============================================================
+     БЭКАП: ЭКСПОРТ / ИМПОРТ ZIP
+     ============================================================ */
+  function progressBar(text) {
+    const bar = document.createElement('div');
+    bar.className = 'upload-bar';
+    bar.innerHTML = `<div class="spin"></div><div class="ub-text"><span class="ub-main">${esc(text)}</span><small class="ub-sub"></small></div>`;
+    document.body.appendChild(bar);
+    return {
+      set(main, sub) {
+        const m = $('.ub-main', bar); const s = $('.ub-sub', bar);
+        if (m && main != null) m.textContent = main;
+        if (s && sub != null) s.textContent = sub;
+      },
+      done() { bar.remove(); }
+    };
+  }
+
+  function downloadBlob(blob, name) {
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = name;
+    a.rel = 'noopener';
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 60000);
+  }
+
+  const BACKUP_README = [
+    'SpotClone — архив медиатеки',
+    '',
+    'library.json  — метаданные: треки, плейлисты, альбомы, настройки',
+    'media/        — аудиофайлы (имена = id треков)',
+    'covers/       — обложки',
+    '',
+    'Как восстановить: откройте SpotClone → «Импорт» в левом нижнем углу →',
+    'выберите этот файл. Можно объединить с текущей библиотекой или заменить её.',
+    ''
+  ].join('\n');
+
+  async function exportLibrary() {
+    if (!state.tracks.length) { toast('Медиатека пуста — нечего экспортировать', 'err'); return; }
+    const ui = progressBar('Готовлю архив…');
+    try {
+      const entries = [];
+      const tracksMeta = [];
+
+      for (let i = 0; i < state.tracks.length; i++) {
+        const t = state.tracks[i];
+        const ext = ((t.fileName || '').match(/\.([A-Za-z0-9]+)$/) || [null, 'bin'])[1].toLowerCase();
+        const mediaName = `media/${t.id}.${ext}`;
+        entries.push({ name: mediaName, blob: t.audioBlob });
+
+        let coverName = null;
+        if (t.coverBlob) {
+          const ctype = t.coverBlob.type || 'image/jpeg';
+          const cext = /png/.test(ctype) ? 'png' : (/webp/.test(ctype) ? 'webp' : 'jpg');
+          coverName = `covers/${t.id}.${cext}`;
+          entries.push({ name: coverName, blob: t.coverBlob });
+        }
+
+        tracksMeta.push({
+          id: t.id, title: t.title, artist: t.artist, album: t.album, albumId: t.albumId || null,
+          albumArtist: t.albumArtist || '', year: t.year || '', genre: t.genre || '',
+          trackNo: t.trackNo || '', duration: t.duration || 0, size: t.size || 0,
+          mime: t.mime || '', fileName: t.fileName, addedAt: t.addedAt,
+          media: mediaName, cover: coverName
+        });
+        ui.set(`Экспорт: ${i + 1} из ${state.tracks.length}`, t.title);
+        if (i % 10 === 0) await new Promise((r) => setTimeout(r, 0));
+      }
+
+      const manifest = {
+        app: 'SpotClone',
+        version: 1,
+        exportedAt: new Date().toISOString(),
+        tracks: tracksMeta,
+        playlists: state.playlists.map((p) => ({
+          id: p.id, name: p.name, trackIds: p.trackIds, createdAt: p.createdAt, system: !!p.system
+        })),
+        albums: state.albums.map((a) => ({
+          id: a.id, name: a.name, artist: a.artist, year: a.year, trackIds: a.trackIds, createdAt: a.createdAt
+        })),
+        settings: {
+          volume: Player.state.volume,
+          shuffle: Player.state.shuffle,
+          repeat: Player.state.repeat,
+          recent: state.recent
+        }
+      };
+
+      // обложки альбомов
+      for (const a of state.albums) {
+        if (!a.coverBlob) continue;
+        const ctype = a.coverBlob.type || 'image/jpeg';
+        const cext = /png/.test(ctype) ? 'png' : (/webp/.test(ctype) ? 'webp' : 'jpg');
+        entries.push({ name: `covers/album-${a.id}.${cext}`, blob: a.coverBlob });
+        manifest.albums.find((x) => x.id === a.id).cover = `covers/album-${a.id}.${cext}`;
+      }
+
+      entries.push({ name: 'library.json', blob: new Blob([JSON.stringify(manifest, null, 2)], { type: 'application/json' }) });
+      entries.push({ name: 'readme.txt', blob: new Blob([BACKUP_README], { type: 'text/plain' }) });
+
+      ui.set('Упаковываю ZIP…', `файлов: ${entries.length}`);
+      const blob = await Zip.create(entries, (i, n) => ui.set(`Упаковка: ${i} из ${n}`, ''));
+      const name = `spotclone-backup-${new Date().toISOString().slice(0, 10)}.zip`;
+      downloadBlob(blob, name);
+      ui.done();
+      toast(`Готово: ${state.tracks.length} ${plural(state.tracks.length, 'трек', 'трека', 'треков')} · ${fmtBytes(blob.size)}`);
+    } catch (e) {
+      console.error(e);
+      ui.done();
+      toast('Не удалось создать архив: ' + e.message, 'err');
+    }
+  }
+
+  function guessImageType(name) {
+    if (/\.png$/i.test(name)) return 'image/png';
+    if (/\.webp$/i.test(name)) return 'image/webp';
+    if (/\.gif$/i.test(name)) return 'image/gif';
+    return 'image/jpeg';
+  }
+
+  async function importLibrary(file, mode) {
+    const ui = progressBar('Читаю архив…');
+    try {
+      const buffer = await readArrayBuffer(file);
+      ui.set('Распаковываю…', file.name);
+      const entries = await Zip.read(buffer);
+      const byName = new Map(entries.map((e) => [e.name, e]));
+      const findEntry = (name) => {
+        if (!name) return null;
+        if (byName.has(name)) return byName.get(name);
+        const base = String(name).split('/').pop();
+        return entries.find((e) => e.name.split('/').pop() === base) || null;
+      };
+
+      const manifestEntry = findEntry('library.json');
+      if (!manifestEntry) throw new Error('в архиве нет library.json — это не бэкап SpotClone');
+      const manifest = JSON.parse(Zip.utf8Decode(manifestEntry.data));
+
+      if (mode === 'replace') {
+        await DB.clearAll();
+        Files.releaseAll();
+        state.tracks = [];
+        state.playlists = [];
+        state.albums = [];
+        state.recent = [];
+        state.accentCache.clear();
+        ensureLiked();
+      }
+
+      const idMap = new Map();
+      let added = 0, skipped = 0, noFile = 0;
+      const list = manifest.tracks || [];
+
+      for (let i = 0; i < list.length; i++) {
+        const meta = list[i];
+        ui.set(`Импорт треков: ${i + 1} из ${list.length}`, meta.title || '');
+        const media = findEntry(meta.media);
+        if (!media) { noFile++; continue; }
+
+        const dupe = state.tracks.find((t) => t.fileName === meta.fileName && t.size === (meta.size || media.data.length));
+        if (dupe) { idMap.set(meta.id, dupe.id); skipped++; continue; }
+
+        const cover = findEntry(meta.cover);
+        const taken = state.tracks.some((t) => t.id === meta.id);
+        const id = taken ? uid() : meta.id;
+
+        const track = {
+          id,
+          title: meta.title || 'Без названия',
+          artist: meta.artist || 'Неизвестный исполнитель',
+          album: meta.album || 'Сингл',
+          albumId: null,
+          albumArtist: meta.albumArtist || '',
+          year: meta.year || '',
+          genre: meta.genre || '',
+          trackNo: meta.trackNo || '',
+          duration: meta.duration || 0,
+          size: meta.size || media.data.length,
+          mime: meta.mime || Tags.guessMime(meta.fileName || '', ''),
+          fileName: meta.fileName || (meta.media || '').split('/').pop(),
+          addedAt: meta.addedAt || Date.now(),
+          coverBlob: cover ? new Blob([cover.data], { type: guessImageType(cover.name) }) : null,
+          audioBlob: new Blob([media.data], { type: meta.mime || 'audio/mpeg' })
+        };
+        await DB.putTrack(track);
+        state.tracks.push(track);
+        idMap.set(meta.id, id);
+        added++;
+        if (i % 5 === 0) await new Promise((r) => setTimeout(r, 0));
+      }
+
+      /* ---------- плейлисты ---------- */
+      for (const pl of manifest.playlists || []) {
+        const ids = (pl.trackIds || []).map((id) => idMap.get(id)).filter(Boolean);
+        if (pl.id === LIKED_ID) {
+          const likedPl = state.playlists.find((p) => p.id === LIKED_ID);
+          if (likedPl) {
+            ids.forEach((id) => { if (!likedPl.trackIds.includes(id)) likedPl.trackIds.unshift(id); });
+            await DB.putPlaylist(likedPl);
+          }
+          continue;
+        }
+        if (!ids.length) continue;
+        const exist = userPlaylists().find((p) => norm(p.name) === norm(pl.name));
+        if (exist) {
+          ids.forEach((id) => { if (!exist.trackIds.includes(id)) exist.trackIds.push(id); });
+          await DB.putPlaylist(exist);
+        } else {
+          const newPl = {
+            id: state.playlists.some((p) => p.id === pl.id) ? uid() : pl.id,
+            name: pl.name || 'Импортированный плейлист',
+            trackIds: ids,
+            createdAt: pl.createdAt || Date.now()
+          };
+          state.playlists.push(newPl);
+          await DB.putPlaylist(newPl);
+        }
+      }
+
+      /* ---------- альбомы ---------- */
+      for (const al of manifest.albums || []) {
+        const ids = (al.trackIds || []).map((id) => idMap.get(id)).filter(Boolean);
+        const exist = state.albums.find((a) => norm(a.name) === norm(al.name || ''));
+        const cover = findEntry(al.cover);
+        const coverBlob = cover ? new Blob([cover.data], { type: guessImageType(cover.name) }) : null;
+
+        let target = exist;
+        if (!target) {
+          target = {
+            id: state.albums.some((a) => a.id === al.id) ? uid() : al.id,
+            name: al.name || 'Импортированный альбом',
+            artist: al.artist || '',
+            year: al.year || '',
+            coverBlob,
+            trackIds: ids,
+            createdAt: al.createdAt || Date.now()
+          };
+          state.albums.push(target);
+        } else {
+          ids.forEach((id) => { if (!target.trackIds.includes(id)) target.trackIds.push(id); });
+          if (coverBlob && !target.coverBlob) target.coverBlob = coverBlob;
+        }
+        await DB.putAlbum(target);
+
+        for (const id of target.trackIds) {
+          const t = trackById(id);
+          if (t && !t.albumId) { t.albumId = target.id; await DB.putTrack(t); }
+        }
+      }
+
+      /* ---------- настройки ---------- */
+      if (mode === 'replace' && manifest.settings) {
+        const st = manifest.settings;
+        if (typeof st.volume === 'number') { Player.setVolume(st.volume, true); $('#volumeInput').value = String(Math.round(st.volume * 100)); }
+        if (st.repeat) Player.setRepeat(st.repeat);
+        if (typeof st.shuffle === 'boolean' && st.shuffle !== Player.state.shuffle) Player.toggleShuffle();
+        if (Array.isArray(st.recent)) state.recent = st.recent.filter((id) => trackById(id));
+      }
+
+      ensureLiked();
+      renderSidebar();
+      updateStorageInfo();
+      renderView();
+      syncPlayerControls();
+      ui.done();
+
+      const parts = [`+${added} ${plural(added, 'трек', 'трека', 'треков')}`];
+      if (skipped) parts.push(`${skipped} уже были`);
+      if (noFile) parts.push(`${noFile} без файла`);
+      toast('Импорт завершён: ' + parts.join(', '));
+    } catch (e) {
+      console.error(e);
+      ui.done();
+      toast('Импорт не удался: ' + e.message, 'err');
+    }
+  }
+
+  function importDialog(file) {
+    openModal(`
+      <h3>Импорт медиатеки</h3>
+      <p class="sub">Архив: ${esc(file.name)} · ${fmtBytes(file.size)}<br>
+      «Объединить» добавит новые треки к текущим. «Заменить» сначала очистит библиотеку.</p>
+      <div class="modal-actions" style="flex-wrap:wrap;gap:8px">
+        <button class="btn-secondary" data-cancel>Отмена</button>
+        <button class="btn-green ghost" data-merge>Объединить</button>
+        <button class="btn-green" data-replace>Заменить</button>
+      </div>
+    `, (root) => {
+      $('[data-cancel]', root).addEventListener('click', closeModal);
+      $('[data-merge]', root).addEventListener('click', () => { closeModal(); importLibrary(file, 'merge'); });
+      $('[data-replace]', root).addEventListener('click', () => {
+        closeModal();
+        importLibrary(file, 'replace');
+      });
+    });
+  }
+
   /* ---------- мобильный сайдбар ---------- */
   function toggleSidebar(force) {
     const sb = $('.sidebar');
@@ -3508,6 +5030,26 @@ svg.ico{width:20px;height:20px;fill:currentColor;flex:none;display:block}
   function closeSidebarMobile() {
     if (window.innerWidth <= 860) toggleSidebar(false);
   }
+
+  /* ---------- публичный API (для отладки и тестов) ---------- */
+  window.SpotClone = {
+    version: '1.1.0',
+    state: state,
+    Player: Player,
+    DB: DB,
+    Files: Files,
+    Zip: Zip,
+    Tags: Tags,
+    exportLibrary: exportLibrary,
+    importLibrary: importLibrary,
+    editTrackModal: editTrackModal,
+    createAlbum: createAlbum,
+    addTracksToAlbum: addTracksToAlbum,
+    pickTracks: pickTracks,
+    openNP: openNP,
+    closeNP: closeNP,
+    go: go
+  };
 
   /* ---------- старт ---------- */
   let started = false;
