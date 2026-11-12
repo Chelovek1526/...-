@@ -809,6 +809,72 @@ body.np-open{overflow:hidden}
 /* hidden должен побеждать display:grid у обложки */
 .npfull-art[hidden]{display:none}
 
+/* ============================================================
+   Таймер сна
+   ============================================================ */
+.sleep-btn{position:relative}
+.sleep-btn.active{color:var(--green)}
+.sleep-btn[data-left]::before{
+  content:attr(data-left);position:absolute;top:-2px;right:-4px;
+  min-width:15px;height:15px;padding:0 3px;border-radius:8px;
+  background:var(--green);color:#04170a;font-size:9.5px;font-weight:800;line-height:15px;
+  text-align:center;letter-spacing:0;font-variant-numeric:tabular-nums;
+}
+@media (max-width:760px){
+  .player-right{gap:2px}
+  .player-right .icon-btn{width:30px;height:30px}
+  .player-right .icon-btn .ico{width:19px;height:19px}
+  .sleep-btn[data-left]::before{top:-1px;right:-5px}
+}
+.np-link.active{color:var(--green)}
+
+/* ============================================================
+   Караоке-режим
+   ============================================================ */
+body.karaoke .npfull-body{max-width:min(1200px,94vw);gap:0;padding-bottom:0}
+body.karaoke .npfull-art,
+body.karaoke .npfull-meta,
+body.karaoke .npfull-progress,
+body.karaoke .npfull-controls,
+body.karaoke .npfull-links{display:none}
+body.karaoke .npfull-stage{flex:1}
+body.karaoke .np-lyrics{background:transparent;box-shadow:none;border-radius:0}
+body.karaoke .np-lyrics-body{padding:2vh 4vw 40% 4vw;-webkit-mask-image:linear-gradient(180deg,transparent,#000 14%,#000 72%,transparent);mask-image:linear-gradient(180deg,transparent,#000 14%,#000 72%,transparent)}
+body.karaoke .lyr-line{
+  font-size:clamp(19px,3.1vh,34px);font-weight:800;line-height:1.28;margin-bottom:clamp(10px,2.4vh,26px);
+  color:rgba(255,255,255,.38);transform:none;
+}
+body.karaoke .lyr-line.past{color:rgba(255,255,255,.2)}
+body.karaoke .lyr-line.active{
+  color:#fff;transform:none;text-shadow:0 0 26px rgba(255,255,255,.28);
+}
+body.karaoke .lyr-line .lyr-time{display:none}
+body.karaoke .np-lyrics-head{padding-bottom:0;opacity:.55;transition:opacity .2s}
+body.karaoke .np-full-hint{display:none}
+#lyrKaraoke.active{color:var(--green)}
+
+/* ============================================================
+   Дубликаты
+   ============================================================ */
+.dupe-list{max-height:min(58vh,520px);overflow-y:auto;margin:0 0 18px;padding-right:4px}
+.dupe-group{padding:10px 0;border-top:1px solid rgba(255,255,255,.08)}
+.dupe-group:first-child{border-top:0;padding-top:0}
+.dupe-title{font-size:14px;font-weight:800;margin-bottom:8px;display:flex;gap:8px;align-items:baseline;flex-wrap:wrap}
+.dupe-artist{font-size:12.5px;font-weight:600;color:var(--text-mute)}
+.dupe-row{
+  display:grid;grid-template-columns:18px 1fr;grid-template-areas:"mark file" "mark meta";
+  gap:2px 8px;width:100%;text-align:left;padding:8px 10px;margin-bottom:6px;border-radius:8px;
+  background:rgba(255,255,255,.05);border:1px solid transparent;color:var(--text-dim);
+  cursor:pointer;transition:background .15s,border-color .15s;
+}
+.dupe-row:hover{background:rgba(255,255,255,.09)}
+.dupe-row.keep{background:rgba(30,215,96,.12);border-color:rgba(30,215,96,.5);color:#fff}
+.dupe-mark{grid-area:mark;align-self:center;font-size:15px;font-weight:800;text-align:center;color:var(--text-mute)}
+.dupe-row.keep .dupe-mark{color:var(--green)}
+.dupe-row.drop .dupe-mark{color:rgba(255,255,255,.28)}
+.dupe-file{grid-area:file;font-size:13px;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.dupe-meta{grid-area:meta;font-size:11.5px;color:var(--text-mute);font-variant-numeric:tabular-nums}
+
 </style>
 </head>
 <body>
@@ -846,6 +912,8 @@ body.np-open{overflow:hidden}
   <symbol id="i-chevron-down" viewBox="0 0 24 24"><path d="m12 15.4-7.4-7.4 1.4-1.4 6 6 6-6 1.4 1.4-7.4 7.4Z"/></symbol>
   <symbol id="i-chevron-up" viewBox="0 0 24 24"><path d="m12 8.6 7.4 7.4-1.4 1.4-6-6-6 6-1.4-1.4 7.4-7.4Z"/></symbol>
   <symbol id="i-disc" viewBox="0 0 24 24"><path d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20Zm0 2.2a7.8 7.8 0 1 1 0 15.6 7.8 7.8 0 0 1 0-15.6Zm0 4.6a3.2 3.2 0 1 0 0 6.4 3.2 3.2 0 0 0 0-6.4Z"/></symbol>
+  <symbol id="i-dupes" viewBox="0 0 24 24"><path d="M8 2h14v14h-3V5H8V2ZM2 8h14v14H2V8Zm2 2v10h10V10H4Z"/></symbol>
+  <symbol id="i-expand" viewBox="0 0 24 24"><path d="M3 3h7v2H6.4l4.3 4.3-1.4 1.4L5 6.4V10H3V3Zm18 0v7h-2V6.4l-4.3 4.3-1.4-1.4L17.6 5H14V3h7ZM3 14h2v3.6l4.3-4.3 1.4 1.4L6.4 19H10v2H3v-7Zm18 0v7h-7v-2h3.6l-4.3-4.3 1.4-1.4L19 17.6V14h2Z"/></symbol>
   <symbol id="i-download" viewBox="0 0 24 24"><path d="M11 3h2v10.2l3.3-3.3 1.4 1.4-5.7 5.7-5.7-5.7 1.4-1.4L11 13.2V3ZM3.5 18h17v3h-1.8v-1.2H5.3V21H3.5v-3Z"/></symbol>
   <symbol id="i-archive" viewBox="0 0 24 24"><path d="M3 4h18v4H3V4Zm1 6h16v10H4V10Zm5 3v2h6v-2H9Z"/></symbol>
   <symbol id="i-image" viewBox="0 0 24 24"><path d="M3 4h18v16H3V4Zm2 2v9.6l4-4 3.2 3.2 2.6-2.6L19 16.1V6H5Zm10.5 1.5a1.6 1.6 0 1 0 0 3.2 1.6 1.6 0 0 0 0-3.2Z"/></symbol>
@@ -959,6 +1027,7 @@ body.np-open{overflow:hidden}
     </div>
 
     <div class="player-right">
+      <button class="icon-btn sleep-btn" data-action="sleep" id="btnSleep" title="Таймер сна (T)"><svg class="ico"><use href="#i-timer"/></svg></button>
       <button class="icon-btn" data-action="toggle-lyrics" id="btnLyrics" title="Текст песни (L)"><svg class="ico"><use href="#i-lyrics"/></svg></button>
       <button class="icon-btn" data-action="open-np" title="Открыть плеер"><svg class="ico"><use href="#i-chevron-up"/></svg></button>
       <button class="icon-btn" data-action="toggle-queue" title="Очередь воспроизведения"><svg class="ico"><use href="#i-queue"/></svg></button>
@@ -1005,6 +1074,7 @@ body.np-open{overflow:hidden}
         <div class="np-lyrics-head">
           <span class="np-lyrics-source" id="npLyricsSource">Текст песни</span>
           <div class="np-lyrics-tools">
+            <button class="icon-btn" data-action="lyrics-karaoke" id="lyrKaraoke" title="Караоке-режим"><svg class="ico"><use href="#i-expand"/></svg></button>
             <button class="icon-btn" data-action="lyrics-refresh" title="Найти текст в интернете"><svg class="ico"><use href="#i-search"/></svg></button>
             <button class="icon-btn" data-action="lyrics-edit" title="Вставить текст / синхронизировать"><svg class="ico"><use href="#i-edit"/></svg></button>
             <button class="icon-btn" data-action="np-lyrics-off" title="Свернуть текст"><svg class="ico"><use href="#i-close"/></svg></button>
@@ -1043,6 +1113,7 @@ body.np-open{overflow:hidden}
       <button class="np-link" data-action="np-lyrics" id="npLinkLyrics"><svg class="ico"><use href="#i-lyrics"/></svg><span>Текст</span></button>
       <button class="np-link" data-action="np-album"><svg class="ico"><use href="#i-disc"/></svg><span id="npFullAlbum">Альбом</span></button>
       <button class="np-link" data-action="toggle-queue"><svg class="ico"><use href="#i-queue"/></svg>Очередь</button>
+      <button class="np-link" data-action="sleep" id="npSleepLink"><svg class="ico"><use href="#i-timer"/></svg><span id="npSleepLabel">Таймер</span></button>
       <button class="np-link" data-action="np-edit"><svg class="ico"><use href="#i-edit"/></svg>Изменить данные</button>
     </div>
   </div>
@@ -2151,6 +2222,32 @@ body.np-open{overflow:hidden}
       }
     },
 
+    /** Загрузить трек без автозапуска и встать на сохранённую позицию. */
+    restore: function (track, tracks, contextName, position) {
+      if (!track) return;
+      if (tracks && tracks.length && tracks.indexOf(track) >= 0) {
+        this.setQueue(tracks, tracks.indexOf(track), contextName);
+      } else {
+        this.setQueue([track], 0, contextName || '');
+      }
+      audio.pause();
+      var pos = Math.max(0, Number(position) || 0);
+      var apply = function () {
+        try { audio.currentTime = pos; } catch (e) { /* ignore */ }
+        emit('time');
+        emit('play');
+      };
+      if (audio.readyState >= 1) apply();
+      else {
+        audio.addEventListener('loadedmetadata', apply, { once: true });
+        /* страховка: если метаданные так и не пришли (некоторые браузеры/форматы) */
+        setTimeout(function () { if (audio.readyState < 1) apply(); }, 800);
+      }
+    },
+
+    play: play,
+    pause: pause,
+
     toggle: function () {
       if (!current()) return;
       if (audio.paused) play(); else pause();
@@ -2399,6 +2496,9 @@ body.np-open{overflow:hidden}
     window.addEventListener('hashchange', route);
     route();
     updateStorageInfo();
+    renderSleepBtn();
+    maybeRestoreSession();
+    window.addEventListener('beforeunload', saveResumeNow);
   }
 
   function showMemoryNotice() {
@@ -2948,6 +3048,7 @@ body.np-open{overflow:hidden}
     html += `<div class="section" style="padding-left:16px;padding-right:16px">
       <div class="toolbar">
         <div class="toolbar-search">${ICON('search')}<input id="viewSearch" type="search" placeholder="Фильтр по трекам этой страницы" value="${esc(state.search)}"></div>
+        <button class="link-btn" data-action="dupes">${ICON('dupes')}Дубликаты</button>
         <button class="link-btn" data-action="sort-cycle">Сортировка: ${sortLabel()}${sortIndicator(state.sortKey)}</button>
       </div>
       ${trackTable(list, { title: 'Все треки' })}
@@ -3328,10 +3429,13 @@ body.np-open{overflow:hidden}
       updateMediaSession();
       addRecent(Player.current());
       syncNP(true);
+      saveResumeNow();
     } else if (type === 'play') {
       syncPlayerControls();
       syncPlayingRows();
+      if (!Player.state.playing) saveResumeNow();
     } else if (type === 'time') {
+      scheduleResumeSave();
       syncProgress();
       syncNPProgress();
       syncLyricsHighlight();
@@ -3653,21 +3757,28 @@ body.np-open{overflow:hidden}
     return addedCount;
   }
 
-  async function deleteTrack(track) {
-    const ok = await confirmModal(`Удалить «${track.title}»?`, 'Файл будет удалён из библиотеки этого браузера. Отменить это действие нельзя.');
-    if (!ok) return;
+  /** Удаляет трек отовсюду, без подтверждения (для пачечной чистки дубликатов). */
+  async function removeTrackSilently(track) {
     state.tracks = state.tracks.filter((t) => t.id !== track.id);
     await DB.deleteTrack(track.id);
-    // чистим из плейлистов
     for (const pl of state.playlists) {
       const idx = pl.trackIds.indexOf(track.id);
       if (idx >= 0) { pl.trackIds.splice(idx, 1); await DB.putPlaylist(pl); }
     }
+    for (const al of state.albums) {
+      const idx = al.trackIds ? al.trackIds.indexOf(track.id) : -1;
+      if (idx >= 0) { al.trackIds.splice(idx, 1); await DB.putAlbum(al); }
+    }
     Player.removeFromQueue(track);
     Files.release(track.id);
+  }
+
+  async function deleteTrack(track) {
+    const ok = await confirmModal(`Удалить «${track.title}»?`, 'Файл будет удалён из библиотеки этого браузера. Отменить это действие нельзя.');
+    if (!ok) return;
+    await removeTrackSilently(track);
     renderSidebar();
     updateStorageInfo();
-    if (Player.current() && Player.current().id === track.id) { /* уже обработано в removeFromQueue */ }
     renderView();
     toast('Трек удалён из библиотеки');
   }
@@ -3941,6 +4052,322 @@ body.np-open{overflow:hidden}
       }
     ];
     showMenu(r.left - 180, r.bottom + 6, items);
+  }
+
+
+  /* ============================================================
+     ТАЙМЕР СНА
+     ============================================================ */
+  const sleepTimer = { mode: '', until: 0, tickId: 0, fading: false };
+
+  function sleepLeftText() {
+    if (sleepTimer.mode === 'track') return 'после текущего трека';
+    const left = Math.max(0, sleepTimer.until - Date.now());
+    const m = Math.ceil(left / 60000);
+    return m <= 1 ? 'меньше минуты' : `${m} мин`;
+  }
+
+  function renderSleepBtn() {
+    const btn = $('#btnSleep');
+    const npLink = $('#npSleepLink');
+    const npLabel = $('#npSleepLabel');
+    const on = !!sleepTimer.mode;
+    if (npLink) {
+      npLink.classList.toggle('active', on);
+      if (npLabel) npLabel.textContent = on ? `Таймер: ${sleepLeftText()}` : 'Таймер';
+    }
+    if (!btn) return;
+    btn.classList.toggle('active', on);
+    if (!on) {
+      delete btn.dataset.left;
+      btn.title = 'Таймер сна (T)';
+      return;
+    }
+    if (sleepTimer.mode === 'time') {
+      const left = Math.max(0, sleepTimer.until - Date.now());
+      btn.dataset.left = String(Math.max(1, Math.ceil(left / 60000)));
+    } else {
+      btn.dataset.left = '♫';
+    }
+    btn.title = `Таймер сна: ${sleepLeftText()} — нажмите, чтобы изменить`;
+  }
+
+  function startSleep(kind, minutes) {
+    if (sleepTimer.tickId) { clearInterval(sleepTimer.tickId); sleepTimer.tickId = 0; }
+    if (kind === 'track') {
+      sleepTimer.mode = 'track';
+      sleepTimer.until = 0;
+      if (!Player.state.playing) { sleepTimer.mode = ''; renderSleepBtn(); toast('Сначала включите воспроизведение', 'err'); return; }
+      toast('Таймер сна: остановлюсь после этого трека');
+    } else {
+      sleepTimer.mode = 'time';
+      sleepTimer.until = Date.now() + minutes * 60000;
+      toast(`Таймер сна: ${minutes} ${plural(minutes, 'минута', 'минуты', 'минут')}`);
+    }
+    sleepTimer.tickId = setInterval(tickSleep, 1000);
+    renderSleepBtn();
+  }
+
+  function stopSleep(quiet) {
+    if (sleepTimer.tickId) { clearInterval(sleepTimer.tickId); sleepTimer.tickId = 0; }
+    const was = !!sleepTimer.mode;
+    sleepTimer.mode = '';
+    sleepTimer.until = 0;
+    renderSleepBtn();
+    if (was && !quiet) toast('Таймер сна выключен');
+  }
+
+  function tickSleep() {
+    if (sleepTimer.mode === 'time') {
+      if (Date.now() >= sleepTimer.until) { fireSleepTimer(); return; }
+      renderSleepBtn();
+      return;
+    }
+    if (sleepTimer.mode === 'track') {
+      const audio = Player.audio;
+      const dur = audio && isFinite(audio.duration) ? audio.duration : 0;
+      if (dur > 0 && dur - audio.currentTime <= 2.4 && Player.state.playing) fireSleepTimer();
+    }
+  }
+
+  function fireSleepTimer() {
+    const wasPlaying = Player.state.playing;
+    stopSleep(true);
+    if (!wasPlaying) return;
+    fadeOutAndPause();
+    toast('Таймер сна: воспроизведение остановлено');
+  }
+
+  function fadeOutAndPause() {
+    if (sleepTimer.fading) return;
+    const from = Player.state.volume || 0.8;
+    if (from <= 0.01) from;
+    sleepTimer.fading = true;
+    let step = 0;
+    const total = 12;
+    const id = setInterval(() => {
+      step++;
+      Player.setVolume(from * (1 - step / total), true);
+      if (step >= total) {
+        clearInterval(id);
+        Player.pause();
+        Player.setVolume(from, true);
+        sleepTimer.fading = false;
+      }
+    }, 150);
+  }
+
+  function sleepMenu(x, y) {
+    const items = [
+      { label: 'Таймер сна' },
+      { text: '15 минут', icon: 'timer', action: () => startSleep('time', 15) },
+      { text: '30 минут', icon: 'timer', action: () => startSleep('time', 30) },
+      { text: '45 минут', icon: 'timer', action: () => startSleep('time', 45) },
+      { text: '1 час', icon: 'timer', action: () => startSleep('time', 60) },
+      { text: 'После текущего трека', icon: 'note', action: () => startSleep('track') }
+    ];
+    if (sleepTimer.mode) {
+      items.push({ sep: true }, { text: 'Выключить таймер', icon: 'close', danger: true, action: () => stopSleep() });
+    }
+    showMenu(x, y, items);
+  }
+
+  function openSleepMenuFromButton() {
+    const btn = $('#btnSleep');
+    if (!btn) return;
+    const r = btn.getBoundingClientRect();
+    sleepMenu(r.left - 120, r.top - 8 - 250);
+  }
+
+  /* ============================================================
+     КАРАОКЕ-РЕЖИМ
+     ============================================================ */
+  function setKaraoke(on) {
+    npView.karaoke = !!on;
+    document.body.classList.toggle('karaoke', npView.karaoke);
+    if (npView.karaoke) {
+      if (!isNPOpen()) openNP();
+      showLyricsTab(true);
+      const cur = Player.current();
+      if (cur && !getLyrics(cur) && !lyricState.loading) loadLyricsFor(cur, true);
+    }
+    const btn = $('#lyrKaraoke');
+    if (btn) {
+      btn.classList.toggle('active', npView.karaoke);
+      btn.title = npView.karaoke ? 'Выйти из караоке (Esc)' : 'Караоке-режим';
+    }
+  }
+
+  function toggleKaraoke() { setKaraoke(!npView.karaoke); }
+
+  /* ============================================================
+     ДУБЛИКАТЫ
+     ============================================================ */
+  function normalizeKey(str) {
+    return String(str || '')
+      .toLowerCase()
+      .replace(/ё/g, 'е')
+      .replace(/\((?:feat|ft|with|при уч)[^)]*\)/g, ' ')
+      .replace(/\[[^\]]*\]/g, ' ')
+      .replace(/\((?:re-?master(?:ed)?|deluxe|bonus|expanded)[^)]*\)/g, ' ')
+      .replace(/[^\p{L}\p{N}]+/gu, ' ')
+      .trim();
+  }
+
+  function bitrateOf(t) {
+    if (!t.duration || !t.size) return 0;
+    return Math.round((t.size * 8) / (t.duration / 1000) / 1000);
+  }
+
+  function findDuplicateGroups() {
+    const map = new Map();
+    state.tracks.forEach((t) => {
+      const key = `${normalizeKey(t.artist)}|${normalizeKey(t.title)}`;
+      if (!key.replace('|', '').trim()) return;
+      if (!map.has(key)) map.set(key, []);
+      map.get(key).push(t);
+    });
+
+    const groups = [];
+    map.forEach((items) => {
+      if (items.length < 2) return;
+      const buckets = [];
+      items.forEach((t) => {
+        let bucket = buckets.find((b) => {
+          const base = b[0];
+          if (!t.duration || !base.duration) return true;
+          return Math.abs(base.duration - t.duration) <= 3000;
+        });
+        if (!bucket) { bucket = []; buckets.push(bucket); }
+        bucket.push(t);
+      });
+      buckets.forEach((b) => { if (b.length > 1) groups.push(b); });
+    });
+
+    groups.sort((a, b) => b.length - a.length);
+    return groups;
+  }
+
+  function openDuplicates() {
+    const groups = findDuplicateGroups();
+    if (!groups.length) { toast('Дубликатов не найдено — библиотека чистая'); return; }
+
+    /* рекомендуем оставить трек с лучшим качеством и обложкой */
+    const keep = groups.map((g) => {
+      let best = 0, bestScore = -1;
+      g.forEach((t, i) => {
+        const score = bitrateOf(t) + (t.coverBlob ? 20 : 0) + (t.lyrics ? 10 : 0);
+        if (score > bestScore) { bestScore = score; best = i; }
+      });
+      return best;
+    });
+
+    const total = groups.reduce((s, g) => s + g.length - 1, 0);
+
+    openModal(`
+      <h3>Дубликаты</h3>
+      <p class="sub">Нашёл ${groups.length} ${plural(groups.length, 'группу', 'группы', 'групп')} похожих треков.
+      Отмеченный остаётся, остальные удалятся из библиотеки. Можно кликнуть по строке, чтобы оставить другой файл.</p>
+      <div class="dupe-list" id="dupeList"></div>
+      <div class="modal-actions">
+        <button class="btn-secondary" data-cancel>Закрыть</button>
+        <button class="btn-green" data-drop>Удалить ${total}</button>
+      </div>
+    `, (root) => {
+      const list = $('#dupeList', root);
+
+      const draw = () => {
+        list.innerHTML = groups.map((g, gi) => `
+          <div class="dupe-group">
+            <div class="dupe-title">${esc(g[0].title)}<span class="dupe-artist">${esc(g[0].artist || '')}</span></div>
+            ${g.map((t, i) => `
+              <button class="dupe-row ${i === keep[gi] ? 'keep' : 'drop'}" data-g="${gi}" data-keep="${i}">
+                <span class="dupe-mark">${i === keep[gi] ? '✓' : '×'}</span>
+                <span class="dupe-file">${esc(t.fileName)}</span>
+                <span class="dupe-meta">${fmtTime(t.duration || 0)} · ${bitrateOf(t) || '?'} кбит/с · ${fmtBytes(t.size || 0)}${t.coverBlob ? ' · обложка' : ''}${t.lyrics ? ' · текст' : ''}</span>
+              </button>`).join('')}
+          </div>`).join('');
+      };
+      draw();
+
+      list.addEventListener('click', (e) => {
+        const row = e.target.closest('[data-keep]');
+        if (!row) return;
+        keep[Number(row.dataset.g)] = Number(row.dataset.keep);
+        draw();
+      });
+
+      $('[data-cancel]', root).addEventListener('click', closeModal);
+      $('[data-drop]', root).addEventListener('click', async () => {
+        const doomed = [];
+        groups.forEach((g, gi) => g.forEach((t, i) => { if (i !== keep[gi]) doomed.push(t); }));
+        closeModal();
+        const ui = progressBar('Удаляю дубликаты…');
+        let n = 0;
+        for (const t of doomed) {
+          n++;
+          ui.set(`Удалено ${n} из ${doomed.length}`, t.title);
+          await removeTrackSilently(t);
+        }
+        ui.done();
+        renderSidebar();
+        renderView();
+        updateStorageInfo();
+        toast(`Удалено ${doomed.length} ${plural(doomed.length, 'дубликат', 'дубликата', 'дубликатов')}`);
+      });
+    });
+  }
+
+  /* ============================================================
+     ПРОДОЛЖИТЬ С МЕСТА (сохранение позиции)
+     ============================================================ */
+  let resumeSaveTimer = 0;
+
+  function saveResumeNow() {
+    const cur = Player.current();
+    if (!cur) return;
+    const audio = Player.audio;
+    const pos = audio && isFinite(audio.currentTime) ? Math.round(audio.currentTime) : 0;
+    DB.setMeta('resume', {
+      trackId: cur.id,
+      position: pos,
+      context: Player.state.context || '',
+      at: Date.now()
+    });
+  }
+
+  function scheduleResumeSave() {
+    if (resumeSaveTimer) return;
+    resumeSaveTimer = setTimeout(() => { resumeSaveTimer = 0; saveResumeNow(); }, 4000);
+  }
+
+  async function maybeRestoreSession() {
+    let saved = null;
+    try { saved = await DB.getMeta('resume', null); } catch (e) { saved = null; }
+    if (!saved || !saved.trackId) return;
+    if (saved.at && Date.now() - saved.at > 1000 * 60 * 60 * 24 * 60) return; // старше двух месяцев не восстанавливаем
+    const track = state.tracks.find((t) => t.id === saved.trackId);
+    if (!track) return;
+    if (Player.current()) return;                       // уже что-то играет — не мешаем
+
+    const pos = Math.max(0, Math.round(Number(saved.position) || 0));
+    const dur = track.duration || 0;
+    const position = pos < 5 || (dur && pos > dur - 5000) ? 0 : pos;
+
+    let list = null;
+    let name = saved.context || 'Продолжить';
+    const pl = state.playlists.find((p) => p.id !== LIKED_ID && p.trackIds && p.trackIds.indexOf(track.id) >= 0);
+    if (pl) { list = playlistTracks(pl); name = pl.name; }
+    else { list = sortedTracks(state.tracks); name = 'Все треки'; }
+
+    Player.restore(track, list, name, position);
+    syncPlayerControls();
+    syncPlayingRows();
+    renderQueue();
+    updateMediaSession();
+    if (position >= 5) {
+      toast(`Продолжим с ${fmtTime(position * 1000)} — «${track.title}». Нажмите Play или пробел`);
+    }
   }
 
   /* ============================ drag & drop ============================ */
@@ -4218,7 +4645,10 @@ body.np-open{overflow:hidden}
           { text: 'Добавить в плейлист…', icon: 'plus', action: () => choosePlaylist([cur2.id]) },
           { text: 'Добавить в альбом…', icon: 'disc', action: () => chooseAlbum([cur2.id]) },
           { text: 'Скачать трек (ZIP)', icon: 'download', action: () => exportContext('track:' + cur2.id) },
-          { text: 'Свойства файла', icon: 'note', action: () => showTrackInfo(cur2) }
+          { text: 'Свойства файла', icon: 'note', action: () => showTrackInfo(cur2) },
+          { sep: true },
+          { text: npView.karaoke ? 'Выйти из караоке' : 'Караоке-режим', icon: 'expand', action: () => toggleKaraoke() },
+          { text: 'Таймер сна…', icon: 'timer', action: () => { const r = $('#npFull').querySelector('[data-action="np-menu"]').getBoundingClientRect(); sleepMenu(r.left - 200, r.bottom + 6); } }
         ]);
         break;
       }
@@ -4243,6 +4673,13 @@ body.np-open{overflow:hidden}
         break;
       }
       case 'toggle-lyrics': toggleLyrics(); break;
+      case 'lyrics-karaoke': toggleKaraoke(); break;
+      case 'sleep': {
+        const r = actionEl.getBoundingClientRect();
+        sleepMenu(Math.max(8, r.left - 120), Math.max(8, r.top - 268));
+        break;
+      }
+      case 'dupes': openDuplicates(); break;
       case 'np-lyrics': if (isNPOpen()) showLyricsTab(npView.tab !== 'lyrics'); else { openNP(); showLyricsTab(true); } break;
       case 'np-lyrics-off': showLyricsTab(false); break;
       case 'lyrics-retry': loadLyricsFor(Player.current(), true); break;
@@ -4367,6 +4804,7 @@ body.np-open{overflow:hidden}
     if (e.metaKey || e.ctrlKey || e.altKey) return;
 
     if (e.key === 'Escape') {
+      if (npView.karaoke) { setKaraoke(false); return; }
       if (isNPOpen()) { closeNP(); return; }
       closeModal();
       hideMenu();
@@ -4385,6 +4823,7 @@ body.np-open{overflow:hidden}
       case 'r': case 'R': case 'к': case 'К': Player.cycleRepeat(); break;
       case 'm': case 'M': case 'ь': case 'Ь': Player.toggleMute(); break;
       case 'l': case 'L': case 'д': case 'Д': toggleLyrics(); break;
+      case 't': case 'T': case 'е': case 'Е': openSleepMenuFromButton(); break;
       case '/': e.preventDefault(); el.globalSearch.focus(); break;
       default: break;
     }
@@ -4410,6 +4849,7 @@ body.np-open{overflow:hidden}
   function closeNP() {
     const np = $('#npFull');
     if (!np) return;
+    if (npView.karaoke) setKaraoke(false);
     np.classList.remove('open');
     np.setAttribute('aria-hidden', 'true');
     document.body.classList.remove('np-open');
@@ -5353,7 +5793,7 @@ body.np-open{overflow:hidden}
      ТЕКСТЫ ПЕСЕН (LRC): поиск в LRCLIB, просмотр, ручная синхронизация
      ============================================================ */
   const LYRICS_API = 'https://lrclib.net/api';
-  const npView = { tab: 'art' };          // 'art' | 'lyrics'
+  const npView = { tab: 'art', karaoke: false };   // 'art' | 'lyrics' + караоке-режим
   const lyricState = {
     loading: false,
     error: '',
@@ -5867,6 +6307,17 @@ body.np-open{overflow:hidden}
     Tags: Tags,
     exportLibrary: exportLibrary,
     exportContext: exportContext,
+    Player: Player,
+    DB: DB,
+    sleepTimer: sleepTimer,
+    startSleep: startSleep,
+    stopSleep: stopSleep,
+    toggleKaraoke: toggleKaraoke,
+    setKaraoke: setKaraoke,
+    findDuplicateGroups: findDuplicateGroups,
+    openDuplicates: openDuplicates,
+    maybeRestoreSession: maybeRestoreSession,
+    saveResumeNow: saveResumeNow,
     buildArchive: buildArchive,
     importLibrary: importLibrary,
     editTrackModal: editTrackModal,
