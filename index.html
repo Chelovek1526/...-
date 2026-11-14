@@ -875,6 +875,42 @@ body.karaoke .np-full-hint{display:none}
 .dupe-file{grid-area:file;font-size:13px;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .dupe-meta{grid-area:meta;font-size:11.5px;color:var(--text-mute);font-variant-numeric:tabular-nums}
 
+/* ============================================================
+   Живая обложка: свечение в цвет обложки, дыхание и пульс в такт
+   ============================================================ */
+.npfull{--pulse:0;--accent-rgb:30,215,96}
+.npfull-art{position:relative}
+body.living-art .npfull-art{
+  transform:scale(calc(1 + var(--pulse) * .018));
+  box-shadow:0 22px 60px rgba(0,0,0,.6),
+             0 0 calc(24px + var(--pulse) * 90px) rgba(var(--accent-rgb), calc(.10 + var(--pulse) * .48));
+  transition:transform .1s linear,box-shadow .1s linear;
+}
+body.living-art .npfull-art img{will-change:transform;backface-visibility:hidden}
+body.living-art.is-playing .npfull-art.has-art img{animation:artBreathe 16s ease-in-out infinite}
+@keyframes artBreathe{
+  0%,100%{transform:scale(1.004)}
+  50%{transform:scale(1.052)}
+}
+body.living-art .npfull-art.has-art::after{
+  content:"";position:absolute;inset:-10%;pointer-events:none;
+  background:linear-gradient(104deg,transparent 38%,rgba(255,255,255,.15) 50%,transparent 62%);
+  transform:translateX(-130%);opacity:0;
+}
+body.living-art.is-playing .npfull-art.has-art::after{animation:artSweep 11s ease-in-out infinite}
+@keyframes artSweep{
+  0%,74%{transform:translateX(-130%);opacity:0}
+  82%{opacity:.85}
+  100%{transform:translateX(130%);opacity:0}
+}
+.npfull-glow{
+  position:absolute;inset:0;z-index:1;pointer-events:none;opacity:0;mix-blend-mode:screen;
+  background:radial-gradient(56% 44% at 50% 40%,
+    rgba(var(--accent-rgb),.62),rgba(var(--accent-rgb),.16) 56%,transparent 74%);
+  transition:opacity .12s linear;
+}
+body.living-art .npfull-glow{opacity:calc(var(--pulse) * .7)}
+
 </style>
 </head>
 <body>
@@ -1060,6 +1096,7 @@ body.karaoke .np-full-hint{display:none}
 
 <section class="npfull" id="npFull" aria-hidden="true">
   <div class="npfull-bg" id="npFullBg"></div>
+  <div class="npfull-glow" id="npGlow" aria-hidden="true"></div>
   <header class="npfull-top">
     <button class="icon-btn" data-action="close-np" title="Свернуть"><svg class="ico"><use href="#i-chevron-down"/></svg></button>
     <span class="npfull-kicker">Сейчас играет</span>
@@ -2497,6 +2534,7 @@ body.karaoke .np-full-hint{display:none}
     route();
     updateStorageInfo();
     renderSleepBtn();
+    initLivingArt();
     maybeRestoreSession();
     window.addEventListener('beforeunload', saveResumeNow);
   }
@@ -3433,6 +3471,13 @@ body.karaoke .np-full-hint{display:none}
     } else if (type === 'play') {
       syncPlayerControls();
       syncPlayingRows();
+      document.body.classList.toggle('is-playing', !!Player.state.playing);
+      if (Player.state.playing) {
+        if (isNPOpen()) startLivingLoop();
+      } else {
+        stopLivingLoop();
+        setLivingPulse(0);
+      }
       if (!Player.state.playing) saveResumeNow();
     } else if (type === 'time') {
       scheduleResumeSave();
@@ -4370,8 +4415,139 @@ body.karaoke .np-full-hint{display:none}
     }
   }
 
+
+  /* ============================================================
+     ЖИВАЯ ОБЛОЖКА: свечение в цвет обложки, дыхание и пульс в такт
+     ============================================================ */
+  const livingArt = {
+    on: true,          // включено ли вообще (настройка, хранится в IndexedDB)
+    ctx: null,         // AudioContext для анализатора
+    analyser: null,
+    data: null,
+    source: null,
+    raf: 0,
+    smooth: 0,
+    attempted: false,
+    failed: false,
+    frames: 0
+  };
+
+  function prefersReducedMotion() {
+    return !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
+  }
+
+  function applyLivingState() {
+    document.body.classList.toggle('living-art', !!livingArt.on);
+    const np = $('#npFull');
+    if (np) np.classList.toggle('living', !!livingArt.on);
+    if (!livingArt.on) {
+      stopLivingLoop();
+      setLivingPulse(0);
+    }
+  }
+
+  async function initLivingArt() {
+    let saved = null;
+    try { saved = await DB.getMeta('livingArt', null); } catch (e) { saved = null; }
+    livingArt.on = saved === null ? !prefersReducedMotion() : !!saved;
+    applyLivingState();
+  }
+
+  function toggleLivingArt() {
+    livingArt.on = !livingArt.on;
+    DB.setMeta('livingArt', livingArt.on);
+    applyLivingState();
+    if (livingArt.on && Player.state.playing && isNPOpen()) startLivingLoop();
+    toast(livingArt.on ? 'Живая обложка включена' : 'Живая обложка выключена');
+  }
+
+  /** Анализатор подключается один раз, как ответвление: звук при этом идёт напрямую. */
+  function ensureAudioAnalyser() {
+    if (livingArt.analyser || livingArt.failed || livingArt.attempted) return !!livingArt.analyser;
+    livingArt.attempted = true;
+    try {
+      const AC = window.AudioContext || window.webkitAudioContext;
+      if (!AC) throw new Error('Web Audio не поддерживается');
+      const ctx = new AC();
+      const analyser = ctx.createAnalyser();
+      analyser.fftSize = 256;
+      analyser.smoothingTimeConstant = 0.74;
+      const source = ctx.createMediaElementSource(Player.audio);
+      source.connect(ctx.destination);     // звук — напрямую, без изменений
+      source.connect(analyser);            // анализатор — только «на подслушку»
+      livingArt.ctx = ctx;
+      livingArt.analyser = analyser;
+      livingArt.data = new Uint8Array(analyser.frequencyBinCount);
+      livingArt.source = source;
+      if (ctx.state === 'suspended') ctx.resume().catch(() => {});
+    } catch (e) {
+      console.warn('Живая обложка: пульс в такт недоступен —', e && e.message);
+      livingArt.failed = true;
+      livingArt.ctx = null;
+      livingArt.analyser = null;
+    }
+    return !!livingArt.analyser;
+  }
+
+  function setLivingPulse(v) {
+    const np = $('#npFull');
+    if (!np) return;
+    np.style.setProperty('--pulse', (Math.max(0, Math.min(1.4, v))).toFixed(3));
+  }
+
+  /** Уровень низа (кик, бас) — именно он даёт «пульс», а не средние частоты. */
+  function readAudioLevel(now) {
+    if (!livingArt.analyser) {
+      // запасной вариант без Web Audio: очень медленное «дыхание»
+      return 0.22 + 0.16 * Math.sin(now / 900);
+    }
+    livingArt.analyser.getByteFrequencyData(livingArt.data);
+    const bins = Math.min(10, livingArt.data.length);
+    let sum = 0;
+    for (let i = 1; i < bins; i++) sum += livingArt.data[i] * livingArt.data[i];
+    const rms = Math.sqrt(sum / Math.max(1, bins - 1)) / 255;
+    return rms;
+  }
+
+  function livingFrame(now) {
+    livingArt.raf = 0;
+    if (!livingArt.on) return;
+    if (document.hidden || !isNPOpen() || !Player.state.playing) {
+      setLivingPulse(0);
+      livingArt.smooth = 0;
+      return;
+    }
+    const raw = readAudioLevel(now);
+    const target = Math.min(1, raw * 1.9);
+    // быстрая атака (вспышка на удар) и плавный спад
+    const k = target > livingArt.smooth ? 0.55 : 0.10;
+    livingArt.smooth += (target - livingArt.smooth) * k;
+    setLivingPulse(livingArt.smooth);
+    livingArt.frames++;
+    livingArt.raf = requestAnimationFrame(livingFrame);
+  }
+
+  function startLivingLoop() {
+    if (!livingArt.on || livingArt.raf) return;
+    if (!Player.state.playing) return;
+    ensureAudioAnalyser();
+    livingArt.raf = requestAnimationFrame(livingFrame);
+  }
+
+  function stopLivingLoop() {
+    if (livingArt.raf) cancelAnimationFrame(livingArt.raf);
+    livingArt.raf = 0;
+  }
+
   /* ============================ drag & drop ============================ */
   let dragCounter = 0;
+  function initVisibilityPause() {
+    document.addEventListener('visibilitychange', () => {
+      if (document.hidden) { stopLivingLoop(); setLivingPulse(0); }
+      else if (livingArt.on && Player.state.playing && isNPOpen()) startLivingLoop();
+    });
+  }
+
   function initDragDrop() {
     const dz = $('#dropzone');
     window.addEventListener('dragenter', (e) => {
@@ -4574,6 +4750,7 @@ body.karaoke .np-full-hint{display:none}
     window.addEventListener('beforeunload', () => { Files.releaseAll(); });
 
     initDragDrop();
+    initVisibilityPause();
   }
 
   function onContentClick(e) {
@@ -4648,6 +4825,7 @@ body.karaoke .np-full-hint{display:none}
           { text: 'Свойства файла', icon: 'note', action: () => showTrackInfo(cur2) },
           { sep: true },
           { text: npView.karaoke ? 'Выйти из караоке' : 'Караоке-режим', icon: 'expand', action: () => toggleKaraoke() },
+          { text: livingArt.on ? 'Живая обложка: вкл' : 'Живая обложка: выкл', icon: 'disc', action: () => toggleLivingArt() },
           { text: 'Таймер сна…', icon: 'timer', action: () => { const r = $('#npFull').querySelector('[data-action="np-menu"]').getBoundingClientRect(); sleepMenu(r.left - 200, r.bottom + 6); } }
         ]);
         break;
@@ -4844,12 +5022,15 @@ body.karaoke .np-full-hint{display:none}
     document.body.classList.add('np-open');
     syncNP(true);
     showLyricsTab(npView.tab === 'lyrics');
+    if (Player.state.playing) startLivingLoop();
   }
 
   function closeNP() {
     const np = $('#npFull');
     if (!np) return;
     if (npView.karaoke) setKaraoke(false);
+    stopLivingLoop();
+    setLivingPulse(0);
     np.classList.remove('open');
     np.setAttribute('aria-hidden', 'true');
     document.body.classList.remove('np-open');
@@ -4883,6 +5064,7 @@ body.karaoke .np-full-hint{display:none}
     $('#npFullAlbum').textContent = cur.album || 'Альбом';
     const cover = Files.coverUrl(cur);
     $('#npFullArt').innerHTML = cover ? `<img src="${cover}" alt="">` : ICON('note');
+    $('#npFullArt').classList.toggle('has-art', !!cover);
     const like = $('#npFullLike');
     like.classList.toggle('liked', isLiked(cur.id));
     like.innerHTML = ICON(isLiked(cur.id) ? 'heart-fill' : 'heart');
@@ -4895,6 +5077,7 @@ body.karaoke .np-full-hint{display:none}
         }
         // только непрозрачные цвета: под плеером не должно быть видно интерфейс
         const parts = rgb.split(',').map(Number);
+        $('#npFull').style.setProperty('--accent-rgb', rgb);
         const shade = (k) => `rgb(${parts.map((c) => Math.round(c * k)).join(',')})`;
         $('#npFullBg').style.background =
           `linear-gradient(180deg, ${shade(0.85)} 0%, ${shade(0.45)} 45%, #0b0b0b 80%, #000 100%)`;
@@ -6301,6 +6484,10 @@ body.karaoke .np-full-hint{display:none}
     version: '1.1.0',
     state: state,
     Player: Player,
+    livingArt: livingArt,
+    toggleLivingArt: toggleLivingArt,
+    startLivingLoop: startLivingLoop,
+    stopLivingLoop: stopLivingLoop,
     DB: DB,
     Files: Files,
     Zip: Zip,
@@ -6308,6 +6495,10 @@ body.karaoke .np-full-hint{display:none}
     exportLibrary: exportLibrary,
     exportContext: exportContext,
     Player: Player,
+    livingArt: livingArt,
+    toggleLivingArt: toggleLivingArt,
+    startLivingLoop: startLivingLoop,
+    stopLivingLoop: stopLivingLoop,
     DB: DB,
     sleepTimer: sleepTimer,
     startSleep: startSleep,
