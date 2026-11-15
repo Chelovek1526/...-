@@ -2119,6 +2119,368 @@ body.living-art .npfull-glow{opacity:calc(var(--pulse) * .7)}
 
 </script>
 <script>
+/* ===== js/mp4.js ===== */
+/* ============================================================
+   mp4.js — упаковка «голого» AAC (ADTS) в контейнер MP4 (.m4a).
+
+   Зачем: Chrome и большинство браузеров играют .aac напрямую,
+   но некоторые сборки Chromium (например, Яндекс.Браузер)
+   понимают AAC только внутри MP4. Здесь мы просто меняем
+   обёртку: аудиокадры переносятся байт в байт, без перекодирования,
+   поэтому качество и размер не меняются.
+
+   Формат: ISO/IEC 14496-12 (ISO BMFF), только аудиодорожка.
+   ============================================================ */
+(function (global) {
+  'use strict';
+
+  var SAMPLE_RATES = [96000, 88200, 64000, 48000, 44100, 32000, 24000, 22050, 16000, 12000, 11025, 8000, 7350];
+
+  /* ---------------------------- запись байтов ---------------------------- */
+  function Writer() {
+    this.buf = new Uint8Array(512);
+    this.len = 0;
+  }
+  Writer.prototype.need = function (n) {
+    if (this.len + n <= this.buf.length) return;
+    var cap = this.buf.length;
+    while (cap < this.len + n) cap *= 2;
+    var next = new Uint8Array(cap);
+    next.set(this.buf.subarray(0, this.len));
+    this.buf = next;
+  };
+  Writer.prototype.byte = function (v) { this.need(1); this.buf[this.len++] = v & 0xFF; return this; };
+  Writer.prototype.u16 = function (v) { this.byte((v >>> 8) & 0xFF); this.byte(v & 0xFF); return this; };
+  Writer.prototype.u32 = function (v) { this.byte((v >>> 24) & 0xFF); this.byte((v >>> 16) & 0xFF); this.byte((v >>> 8) & 0xFF); this.byte(v & 0xFF); return this; };
+  Writer.prototype.bytes = function (arr) { this.need(arr.length); this.buf.set(arr, this.len); this.len += arr.length; return this; };
+  Writer.prototype.str = function (s) { for (var i = 0; i < s.length; i++) this.byte(s.charCodeAt(i)); return this; };
+  Writer.prototype.result = function () { return this.buf.subarray(0, this.len); };
+
+  /* ---------------------------- боксы ---------------------------- */
+  function box(type, build) {
+    var inner = new Writer();
+    build(inner);
+    var body = inner.result();
+    var out = new Writer();
+    out.u32(8 + body.length);
+    out.str(type);
+    out.bytes(body);
+    return out.result();
+  }
+
+  function fullBox(type, version, flags, build) {
+    return box(type, function (w) {
+      w.byte(version);
+      w.byte((flags >>> 16) & 0xFF);
+      w.byte((flags >>> 8) & 0xFF);
+      w.byte(flags & 0xFF);
+      build(w);
+    });
+  }
+
+  /* дескриптор MPEG-4: тег + длина в переменном формате */
+  function descriptor(tag, parts) {
+    var body = new Writer();
+    for (var i = 0; i < parts.length; i++) {
+      if (parts[i] instanceof Uint8Array) body.bytes(parts[i]);
+      else body.byte(parts[i]);
+    }
+    var data = body.result();
+    var n = data.length;
+    var out = new Writer();
+    out.byte(tag);
+    if (n < 0x80) out.byte(n);
+    else if (n < 0x4000) { out.byte(0x80 | (n >>> 7)); out.byte(n & 0x7F); }
+    else { out.byte(0x80 | (n >>> 14)); out.byte(0x80 | ((n >>> 7) & 0x7F)); out.byte(n & 0x7F); }
+    out.bytes(data);
+    return out.result();
+  }
+
+  /* AudioSpecificConfig: 5 бит objectType, 4 бита частоты, 4 бита каналов */
+  function audioSpecificConfig(profile, freqIndex, channels) {
+    var objectType = profile + 1;               // 1 Main, 2 LC, 3 SSR, 4 LTP
+    var b0 = ((objectType & 0x1F) << 3) | ((freqIndex >>> 1) & 0x07);
+    var b1 = ((freqIndex & 0x01) << 7) | ((channels & 0x0F) << 3);
+    return new Uint8Array([b0, b1]);
+  }
+
+  /* ---------------------------- ADTS ---------------------------- */
+  function toBytes(buffer) {
+    if (buffer instanceof Uint8Array) return buffer;
+    if (buffer instanceof ArrayBuffer) return new Uint8Array(buffer);
+    if (buffer && buffer.buffer instanceof ArrayBuffer) {
+      return new Uint8Array(buffer.buffer, buffer.byteOffset || 0, buffer.byteLength || buffer.length);
+    }
+    return null;
+  }
+
+  /** Проверка по синхро-байту: 12 единиц, layer = 00. */
+  function isAdts(buffer) {
+    var b = toBytes(buffer);
+    if (!b || b.length < 8) return false;
+    return b[0] === 0xFF && (b[1] & 0xF6) === 0xF0;
+  }
+
+  /** Разбор потока ADTS: кадры, частота, каналы, профиль. */
+  function parseAdts(buffer) {
+    var data = toBytes(buffer);
+    if (!data) return null;
+    var total = data.length;
+    var frames = [];
+    var sampleRate = 0, channels = 0, profile = 0, freqIndex = 0;
+    var totalSamples = 0;
+    var i = 0;
+    var started = false;
+
+    /* до первого кадра допускаем мусор (бывает в потоках после обрезки) */
+    while (i + 7 <= total) {
+      if (data[i] !== 0xFF || (data[i + 1] & 0xF0) !== 0xF0) {
+        if (started) break;
+        i++;
+        continue;
+      }
+      var protectionAbsent = data[i + 1] & 0x01;
+      var prof = (data[i + 2] >>> 6) & 0x03;
+      var fIdx = (data[i + 2] >>> 2) & 0x0F;
+      var chanCfg = ((data[i + 2] & 0x01) << 2) | ((data[i + 3] >>> 6) & 0x03);
+      var frameLen = ((data[i + 3] & 0x03) << 11) | (data[i + 4] << 3) | ((data[i + 5] >>> 5) & 0x07);
+      var rawBlocks = data[i + 6] & 0x03;
+      var headerLen = protectionAbsent ? 7 : 9;
+
+      if (fIdx >= SAMPLE_RATES.length) return null;         // не наш случай
+      if (frameLen < headerLen || i + frameLen > total) break;
+
+      if (!started) {
+        started = true;
+        sampleRate = SAMPLE_RATES[fIdx];
+        freqIndex = fIdx;
+        channels = chanCfg || 2;
+        profile = prof;
+      }
+
+      var blocks = rawBlocks || 1;
+      frames.push({ offset: i + headerLen, size: frameLen - headerLen, blocks: blocks });
+      totalSamples += blocks * 1024;
+      i += frameLen;
+    }
+
+    if (!started || frames.length < 2) return null;
+    return {
+      frames: frames,
+      sampleRate: sampleRate,
+      freqIndex: freqIndex,
+      channels: channels,
+      profile: profile,
+      totalSamples: totalSamples,
+      durationMs: Math.round((totalSamples / sampleRate) * 1000)
+    };
+  }
+
+  /* ---------------------------- сборка MP4 ---------------------------- */
+  function buildMp4(info, chunkOffset) {
+    var frames = info.frames;
+    var durationMs = info.durationMs;
+    var entry = SAMPLE_RATES.indexOf(info.sampleRate);
+
+    var asc = audioSpecificConfig(info.profile, info.freqIndex !== undefined ? info.freqIndex : entry, info.channels);
+
+    var esds = box('esds', function (w) {
+      w.u32(0);                                            // version + flags
+      var dsi = descriptor(0x05, [asc]);                   // DecoderSpecificInfo
+      var dcd = descriptor(0x04, [                           // DecoderConfigDescriptor
+        0x40,                                              // objectTypeIndication: MPEG-4 Audio
+        0x15,                                              // streamType: audio, upStream 0, reserved 1
+        0x00, 0x06, 0x00,                                  // bufferSizeDB = 1536
+        0x00, 0x00, 0x00, 0x00,                            // maxBitrate
+        0x00, 0x00, 0x00, 0x00,                            // avgBitrate
+        dsi
+      ]);
+      var slc = descriptor(0x06, [0x02]);                  // SLConfigDescriptor
+      w.bytes(descriptor(0x03, [0x00, 0x00, 0x00, dcd, slc])); // ES_Descriptor
+    });
+
+    var mp4a = box('mp4a', function (w) {
+      w.bytes(new Uint8Array(6));                          // reserved
+      w.u16(1);                                            // data_reference_index
+      w.u16(0); w.u16(0);                                  // version, revision
+      w.u32(0);                                            // vendor
+      w.u16(info.channels);                                // channelcount
+      w.u16(16);                                           // samplesize
+      w.u16(0); w.u16(0);                                  // pre_defined, reserved
+      w.u32((info.sampleRate * 65536) % 4294967296);       // samplerate 16.16
+      w.bytes(esds);
+    });
+
+    var stsd = fullBox('stsd', 0, 0, function (w) {
+      w.u32(1);
+      w.bytes(mp4a);
+    });
+
+    /* stts: длительности сэмплов, сгруппированные по одинаковым значениям */
+    var sttsEntries = [];
+    for (var i = 0; i < frames.length; i++) {
+      var delta = 1024 * frames[i].blocks;
+      var last = sttsEntries[sttsEntries.length - 1];
+      if (last && last.delta === delta) last.count++;
+      else sttsEntries.push({ count: 1, delta: delta });
+    }
+    var stts = fullBox('stts', 0, 0, function (w) {
+      w.u32(sttsEntries.length);
+      for (var k = 0; k < sttsEntries.length; k++) {
+        w.u32(sttsEntries[k].count);
+        w.u32(sttsEntries[k].delta);
+      }
+    });
+
+    /* все кадры лежат одним блоком — хватает одной записи в stsc */
+    var stsc = fullBox('stsc', 0, 0, function (w) {
+      w.u32(1);
+      w.u32(1);                 // first_chunk
+      w.u32(frames.length);     // samples_per_chunk
+      w.u32(1);                 // sample_description_index
+    });
+
+    var stsz = fullBox('stsz', 0, 0, function (w) {
+      w.u32(0);                 // sample_size = 0 → размеры идут списком
+      w.u32(frames.length);
+      for (var k = 0; k < frames.length; k++) w.u32(frames[k].size);
+    });
+
+    var stco = fullBox('stco', 0, 0, function (w) {
+      w.u32(1);
+      w.u32(chunkOffset);
+    });
+
+    var stbl = box('stbl', function (w) {
+      w.bytes(stsd); w.bytes(stts); w.bytes(stsc); w.bytes(stsz); w.bytes(stco);
+    });
+
+    var smhd = fullBox('smhd', 0, 0, function (w) { w.u16(0); w.u16(0); });
+
+    var dref = fullBox('dref', 0, 0, function (w) {
+      w.u32(1);
+      w.bytes(fullBox('url ', 0, 1, function () {}));       // данные лежат в этом же файле
+    });
+    var dinf = box('dinf', function (w) { w.bytes(dref); });
+
+    var minf = box('minf', function (w) { w.bytes(smhd); w.bytes(dinf); w.bytes(stbl); });
+
+    var hdlr = fullBox('hdlr', 0, 0, function (w) {
+      w.u32(0);
+      w.str('soun');
+      w.u32(0); w.u32(0); w.u32(0);
+      w.str('SoundHandler');
+      w.byte(0);
+    });
+
+    var mdhd = fullBox('mdhd', 0, 0, function (w) {
+      w.u32(0); w.u32(0);
+      w.u32(info.sampleRate);                    // timescale = частота дискретизации
+      w.u32(info.totalSamples);                  // длительность в сэмплах
+      w.u16(0x55C4);                             // язык: 'und'
+      w.u16(0);
+    });
+
+    var mdia = box('mdia', function (w) { w.bytes(mdhd); w.bytes(hdlr); w.bytes(minf); });
+
+    var tkhd = fullBox('tkhd', 0, 7, function (w) {   // 7 = enabled | in movie | in preview
+      w.u32(0); w.u32(0);                              // создан / изменён
+      w.u32(1);                                        // track_ID
+      w.u32(0);                                        // reserved
+      w.u32(durationMs);                               // длительность в movie-timescale
+      w.u32(0); w.u32(0);                              // reserved
+      w.u16(0); w.u16(0);                              // layer, alternate_group
+      w.u16(0x0100);                                   // громкость 1.0
+      w.u16(0);                                        // reserved
+      w.u32(0x00010000); w.u32(0); w.u32(0);           // матрица
+      w.u32(0); w.u32(0x00010000); w.u32(0);
+      w.u32(0); w.u32(0); w.u32(0x40000000);
+      w.u32(0); w.u32(0);                              // ширина / высота
+    });
+
+    var trak = box('trak', function (w) { w.bytes(tkhd); w.bytes(mdia); });
+
+    var mvhd = fullBox('mvhd', 0, 0, function (w) {
+      w.u32(0); w.u32(0);
+      w.u32(1000);                                     // movie timescale
+      w.u32(durationMs);
+      w.u32(0x00010000);                               // rate 1.0
+      w.u16(0x0100);                                   // volume 1.0
+      w.u16(0); w.u32(0); w.u32(0);                    // reserved
+      w.u32(0x00010000); w.u32(0); w.u32(0);
+      w.u32(0); w.u32(0x00010000); w.u32(0);
+      w.u32(0); w.u32(0); w.u32(0x40000000);
+      w.u32(0); w.u32(0); w.u32(0); w.u32(0); w.u32(0); w.u32(0);
+      w.u32(2);                                        // next_track_ID
+    });
+
+    var moov = box('moov', function (w) { w.bytes(mvhd); w.bytes(trak); });
+
+    var ftyp = box('ftyp', function (w) {
+      w.str('M4A '); w.u32(0);
+      w.str('M4A '); w.str('mp42'); w.str('isom'); w.str('iso2');
+    });
+
+    return { ftyp: ftyp, moov: moov };
+  }
+
+  /**
+   * Переупаковка ADTS → MP4.
+   * @returns null, если это не ADTS; иначе { data: Uint8Array, durationMs, sampleRate, channels, frames }
+   */
+  function remuxAdts(buffer) {
+    var info = parseAdts(buffer);
+    var data = toBytes(buffer);
+    if (!info || !data) return null;
+
+    /* mdat: только «сырые» кадры, заголовки ADTS идут в утиль */
+    var payload = 0;
+    for (var i = 0; i < info.frames.length; i++) payload += info.frames[i].size;
+
+    var ftyp = box('ftyp', function (w) {
+      w.str('M4A '); w.u32(0);
+      w.str('M4A '); w.str('mp42'); w.str('isom'); w.str('iso2');
+    });
+    var chunkOffset = ftyp.length + 8;          // сразу за заголовком mdat
+    var built = buildMp4(info, chunkOffset);
+
+    var total = chunkOffset + payload + built.moov.length;
+    var out = new Uint8Array(total);
+    var pos = 0;
+
+    out.set(built.ftyp, pos); pos += built.ftyp.length;
+    out[pos++] = (8 + payload) >>> 24 & 0xFF;
+    out[pos++] = (8 + payload) >>> 16 & 0xFF;
+    out[pos++] = (8 + payload) >>> 8 & 0xFF;
+    out[pos++] = (8 + payload) & 0xFF;
+    out[pos++] = 0x6D; out[pos++] = 0x64; out[pos++] = 0x61; out[pos++] = 0x74;   // 'mdat'
+    for (var f = 0; f < info.frames.length; f++) {
+      var fr = info.frames[f];
+      out.set(data.subarray(fr.offset, fr.offset + fr.size), pos);
+      pos += fr.size;
+    }
+    out.set(built.moov, pos);
+
+    return {
+      data: out,
+      durationMs: info.durationMs,
+      sampleRate: info.sampleRate,
+      channels: info.channels,
+      frames: info.frames.length,
+      profile: info.profile
+    };
+  }
+
+  global.Mp4 = {
+    version: '1.0.0',
+    isAdts: isAdts,
+    parseAdts: parseAdts,
+    remuxAdts: remuxAdts
+  };
+})(typeof window !== 'undefined' ? window : globalThis);
+
+</script>
+<script>
 /* ===== js/player.js ===== */
 /* ============================================================
    player.js — движок воспроизведения (HTMLAudioElement).
@@ -2535,6 +2897,7 @@ body.living-art .npfull-glow{opacity:calc(var(--pulse) * .7)}
     updateStorageInfo();
     renderSleepBtn();
     initLivingArt();
+    migrateAdtsTracks();
     maybeRestoreSession();
     window.addEventListener('beforeunload', saveResumeNow);
   }
@@ -3544,6 +3907,64 @@ body.living-art .npfull-glow{opacity:calc(var(--pulse) * .7)}
 
   const isZipFile = (f) => f && (/\.zip$/i.test(f.name) || /zip/i.test(f.type || ''));
 
+  /** Правильный MIME по расширению: ОС часто отдаёт пустой или неверный тип. */
+  function audioMimeFor(fileName, fallback) {
+    const ext = ((String(fileName || '').match(/\.([A-Za-z0-9]+)$/) || [])[1] || '').toLowerCase();
+    switch (ext) {
+      case 'm4a': case 'm4b': case 'm4r': case 'mp4': case 'alac': return 'audio/mp4';
+      case 'aac': return 'audio/aac';
+      case 'mp3': case 'mp2': return 'audio/mpeg';
+      case 'flac': return 'audio/flac';
+      case 'wav': case 'wave': return 'audio/wav';
+      case 'ogg': case 'oga': case 'opus': return 'audio/ogg';
+      case 'webm': return 'audio/webm';
+      case 'aif': case 'aiff': case 'aifc': return 'audio/aiff';
+      case 'wma': return 'audio/x-ms-wma';
+      default: return fallback || '';
+    }
+  }
+
+  /**
+   * Готовит файл к воспроизведению:
+   * — «голый» AAC (ADTS) упаковывает в MP4, потому что часть браузеров
+   *   (например, Яндекс на десктопе) играет AAC только внутри MP4;
+   * — остальным проставляет корректный MIME, чтобы браузер не гадал.
+   * Перекодирования нет: те же кадры, только обёртка и тип.
+   */
+  function prepareAudio(buf, file, metaMime) {
+    const name = (file && file.name) || 'track';
+    const base = name.replace(/\.[^.]+$/, '');
+    const res = {
+      blob: file,
+      fileName: name,
+      origName: name,
+      mime: audioMimeFor(name, (file && file.type) || metaMime || ''),
+      remuxed: false,
+      duration: 0
+    };
+
+    if (window.Mp4 && Mp4.isAdts(buf)) {
+      try {
+        const out = Mp4.remuxAdts(buf);
+        if (out) {
+          res.blob = new Blob([out.data], { type: 'audio/mp4' });
+          res.fileName = base + '.m4a';
+          res.mime = 'audio/mp4';
+          res.remuxed = true;
+          res.duration = out.durationMs;
+          return res;
+        }
+      } catch (e) {
+        console.warn('Не удалось упаковать AAC в MP4, играем как есть:', e);
+      }
+    }
+
+    if (res.mime && (!file || file.type !== res.mime)) {
+      try { res.blob = new Blob([buf], { type: res.mime }); } catch (e) { res.blob = file; }
+    }
+    return res;
+  }
+
   /** Точка входа для выбора файлов и drag & drop: понимает и аудио, и ZIP-архивы. */
   async function handleFiles(fileList) {
     const all = Array.from(fileList || []);
@@ -3575,7 +3996,7 @@ body.living-art .npfull-glow{opacity:calc(var(--pulse) * .7)}
     document.body.appendChild(bar);
     const ubMain = $('#ubMain', bar), ubSub = $('#ubSub', bar);
 
-    let added = 0, skipped = 0, failed = 0;
+    let added = 0, skipped = 0, failed = 0, remuxed = 0;
     const newTracks = [];
 
     for (let i = 0; i < files.length; i++) {
@@ -3590,8 +4011,10 @@ body.living-art .npfull-glow{opacity:calc(var(--pulse) * .7)}
 
         const buf = await readArrayBuffer(file);
         const meta = Tags.parse(buf, file.name, file.type);
-        let duration = meta.duration || 0;
-        if (!duration) duration = await probeDuration(file, meta.mime);
+        const prepared = prepareAudio(buf, file, meta.mime);
+        if (prepared.remuxed) remuxed++;
+        let duration = meta.duration || prepared.duration || 0;
+        if (!duration) duration = await probeDuration(prepared.blob, prepared.mime);
 
         const track = {
           id: uid(),
@@ -3604,11 +4027,13 @@ body.living-art .npfull-glow{opacity:calc(var(--pulse) * .7)}
           trackNo: meta.trackNo || '',
           duration: Math.round(duration),
           size: file.size,
-          mime: meta.mime,
-          fileName: file.name,
+          mime: prepared.mime,
+          fileName: prepared.fileName,
+          origName: prepared.remuxed ? prepared.origName : undefined,
+          remuxed: prepared.remuxed || undefined,
           addedAt: Date.now() + i,
           coverBlob: meta.cover || null,
-          audioBlob: file
+          audioBlob: prepared.blob
         };
         await DB.putTrack(track);
         state.tracks.push(track);
@@ -3636,6 +4061,9 @@ body.living-art .npfull-glow{opacity:calc(var(--pulse) * .7)}
       }
     }
     if (skipped) toast(`Пропущено дубликатов: ${skipped}`);
+    if (remuxed) {
+      toast(`${remuxed} ${plural(remuxed, 'файл AAC упакован', 'файла AAC упакованы', 'файлов AAC упакованы')} в MP4 — теперь играет везде`);
+    }
     if (failed) toast(`Не удалось обработать файлов: ${failed}`, 'err');
   }
 
@@ -4537,6 +4965,40 @@ body.living-art .npfull-glow{opacity:calc(var(--pulse) * .7)}
   function stopLivingLoop() {
     if (livingArt.raf) cancelAnimationFrame(livingArt.raf);
     livingArt.raf = 0;
+  }
+
+  /** Разовый перенос уже добавленных .aac: упаковываем в MP4, чтобы играли везде. */
+  async function migrateAdtsTracks() {
+    if (!window.Mp4) return 0;
+    const targets = state.tracks.filter((t) => !t.remuxed && /\.aac$/i.test(t.fileName || ''));
+    if (!targets.length) return 0;
+    let fixed = 0;
+    for (const t of targets) {
+      try {
+        if (!t.audioBlob) continue;
+        const buf = await readArrayBuffer(t.audioBlob);
+        if (!Mp4.isAdts(buf)) continue;
+        const out = Mp4.remuxAdts(buf);
+        if (!out) continue;
+        const origName = t.origName || t.fileName;
+        t.audioBlob = new Blob([out.data], { type: 'audio/mp4' });
+        t.fileName = origName.replace(/\.[^.]+$/, '') + '.m4a';
+        t.origName = origName;
+        t.mime = 'audio/mp4';
+        t.remuxed = true;
+        if (!t.duration) t.duration = out.durationMs;
+        await DB.putTrack(t);
+        Files.release(t.id);
+        fixed++;
+      } catch (e) {
+        console.warn('Миграция AAC не удалась:', t.fileName, e);
+      }
+    }
+    if (fixed) {
+      renderView();
+      toast(`${fixed} старых .aac ${plural(fixed, 'упакован', 'упакованы', 'упакованы')} в MP4 — теперь играют везде`);
+    }
+    return fixed;
   }
 
   /* ============================ drag & drop ============================ */
@@ -5825,6 +6287,27 @@ body.living-art .npfull-glow{opacity:calc(var(--pulse) * .7)}
         const taken = state.tracks.some((t) => t.id === meta.id);
         const id = taken ? uid() : meta.id;
 
+        /* архив мог быть собран со «голым» AAC — упаковываем так же, как при загрузке */
+        const origName = meta.fileName || (meta.media || '').split('/').pop();
+        let preparedBlob, preparedName = origName, preparedMime = meta.mime || audioMimeFor(origName, '');
+        let preparedRemux = false;
+        if (window.Mp4 && Mp4.isAdts(media.data)) {
+          try {
+            const out = Mp4.remuxAdts(media.data);
+            if (out) {
+              preparedBlob = new Blob([out.data], { type: 'audio/mp4' });
+              preparedName = origName.replace(/\.[^.]+$/, '') + '.m4a';
+              preparedMime = 'audio/mp4';
+              preparedRemux = true;
+              if (!meta.duration) meta.duration = out.durationMs;
+            }
+          } catch (e) { console.warn('Импорт: AAC не удалось упаковать в MP4', e); }
+        }
+        if (!preparedBlob) {
+          preparedBlob = new Blob([media.data], { type: audioMimeFor(origName, preparedMime) || 'audio/mpeg' });
+          preparedMime = audioMimeFor(origName, preparedMime) || preparedMime;
+        }
+
         let lyrics = meta.lyrics || null;
         if (!lyrics) {
           const lrcEntry = findEntry(meta.lyricsFile || `lyrics/${meta.id}.lrc`);
@@ -5851,12 +6334,14 @@ body.living-art .npfull-glow{opacity:calc(var(--pulse) * .7)}
           trackNo: meta.trackNo || '',
           duration: meta.duration || 0,
           size: meta.size || media.data.length,
-          mime: meta.mime || Tags.guessMime(meta.fileName || '', ''),
-          fileName: meta.fileName || (meta.media || '').split('/').pop(),
+          mime: preparedMime,
+          fileName: preparedName,
+          origName: preparedRemux ? origName : undefined,
+          remuxed: preparedRemux || undefined,
           addedAt: meta.addedAt || Date.now(),
           lyrics: lyrics,
           coverBlob: cover ? new Blob([cover.data], { type: guessImageType(cover.name) }) : null,
-          audioBlob: new Blob([media.data], { type: meta.mime || 'audio/mpeg' })
+          audioBlob: preparedBlob
         };
         await DB.putTrack(track);
         state.tracks.push(track);
@@ -6485,6 +6970,9 @@ body.living-art .npfull-glow{opacity:calc(var(--pulse) * .7)}
     state: state,
     Player: Player,
     livingArt: livingArt,
+    migrateAdtsTracks: migrateAdtsTracks,
+    prepareAudio: prepareAudio,
+    audioMimeFor: audioMimeFor,
     toggleLivingArt: toggleLivingArt,
     startLivingLoop: startLivingLoop,
     stopLivingLoop: stopLivingLoop,
@@ -6496,6 +6984,9 @@ body.living-art .npfull-glow{opacity:calc(var(--pulse) * .7)}
     exportContext: exportContext,
     Player: Player,
     livingArt: livingArt,
+    migrateAdtsTracks: migrateAdtsTracks,
+    prepareAudio: prepareAudio,
+    audioMimeFor: audioMimeFor,
     toggleLivingArt: toggleLivingArt,
     startLivingLoop: startLivingLoop,
     stopLivingLoop: stopLivingLoop,
