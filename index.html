@@ -6857,7 +6857,7 @@ body.living-art .npfull-glow{opacity:calc(var(--pulse) * .7)}
     const back = openModal(`
       <h3>Текст песни</h3>
       <p class="sub">${esc(track.title)} — ${esc(track.artist)}<br>
-      Одна строка = одна строка текста. Тайминги можно расставить в плеере кнопкой «Отметить».</p>
+      Одна строка = одна строка текста. Можно вставить готовый LRC с таймингами — они распознаются автоматически; либо расставить их в плеере кнопкой «Отметить».</p>
       <label class="field"><span>Текст</span>
         <textarea data-text rows="10" placeholder="Вставьте текст песни…">${esc(text)}</textarea>
       </label>
@@ -6896,17 +6896,19 @@ body.living-art .npfull-glow{opacity:calc(var(--pulse) * .7)}
     });
 
     $('[data-save]', back).addEventListener('click', async () => {
-      const lines = ta.value.split(/\r?\n/).filter((l, i, arr) => l.trim() || i < arr.length - 1)
+      const pastedLrc = parseLrc(ta.value.replace(/^\uFEFF/, ''));
+      const hasPastedTimes = hasSyncedTimes(pastedLrc);
+      const lines = hasPastedTimes ? pastedLrc : ta.value.split(/\r?\n/).filter((l, i, arr) => l.trim() || i < arr.length - 1)
         .map((l) => ({ time: null, text: l.replace(/\s+$/, '') }));
-      const kept = ly && ly.synced ? mergeTimes(lines, ly.lines) : lines;
+      const kept = hasPastedTimes ? lines : (ly && ly.synced ? mergeTimes(lines, ly.lines) : lines);
       closeModal();
       if (!lines.length) { toast('Текст пустой', 'err'); return; }
       await saveLyrics(track, {
         synced: hasSyncedTimes(kept) ? buildLrc(kept) : null,
         plain: plainFromLines(lines),
-        source: hasSyncedTimes(kept) ? (ly.source === 'lrclib' ? 'lrclib' : 'manual') : 'manual'
+        source: hasSyncedTimes(kept) ? (hasPastedTimes ? 'manual' : (ly.source === 'lrclib' ? 'lrclib' : 'manual')) : 'manual'
       });
-      toast('Текст сохранён');
+      toast(hasPastedTimes ? 'LRC-тайминги распознаны и сохранены' : 'Текст сохранён');
     });
 
     $('[data-sync]', back).addEventListener('click', async () => {
@@ -6978,7 +6980,7 @@ body.living-art .npfull-glow{opacity:calc(var(--pulse) * .7)}
 
   /* ---------- публичный API (для отладки и тестов) ---------- */
   window.SpotClone = {
-    version: '1.7.0',
+    version: '1.8.0',
     state: state,
     Player: Player,
     livingArt: livingArt,
