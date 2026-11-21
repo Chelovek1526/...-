@@ -740,6 +740,7 @@ body.np-open{overflow:hidden}
 }
 .np-lyrics-source{font-size:11.5px;letter-spacing:.1em;text-transform:uppercase;color:rgba(255,255,255,.62);font-weight:700}
 .np-lyrics-tools{display:flex;gap:2px}
+.np-lyrics-tools .icon-btn:disabled{opacity:.34;cursor:not-allowed}
 .np-lyrics-body{
   flex:1;min-height:0;overflow-y:auto;padding:6px 20px 42% 20px;
   scroll-behavior:smooth;-webkit-mask-image:linear-gradient(180deg,transparent,#000 6%,#000 82%,transparent);
@@ -954,6 +955,7 @@ body.living-art .npfull-glow{opacity:calc(var(--pulse) * .7)}
   <symbol id="i-archive" viewBox="0 0 24 24"><path d="M3 4h18v4H3V4Zm1 6h16v10H4V10Zm5 3v2h6v-2H9Z"/></symbol>
   <symbol id="i-image" viewBox="0 0 24 24"><path d="M3 4h18v16H3V4Zm2 2v9.6l4-4 3.2 3.2 2.6-2.6L19 16.1V6H5Zm10.5 1.5a1.6 1.6 0 1 0 0 3.2 1.6 1.6 0 0 0 0-3.2Z"/></symbol>
   <symbol id="i-edit" viewBox="0 0 24 24"><path d="M4 17.2V20h2.8L17 9.8 14.2 7 4 17.2ZM19.7 7.3a1 1 0 0 0 0-1.4l-1.6-1.6a1 1 0 0 0-1.4 0L15.3 5.7l2.8 2.8 1.6-1.2Z"/></symbol>
+  <symbol id="i-copy" viewBox="0 0 24 24"><path d="M8 2h13v15h-2V4H8V2ZM4 6h13v16H4V6Zm2 2v12h9V8H6Z"/></symbol>
 </svg>
 
 <div class="app" id="app">
@@ -1112,6 +1114,7 @@ body.living-art .npfull-glow{opacity:calc(var(--pulse) * .7)}
           <span class="np-lyrics-source" id="npLyricsSource">Текст песни</span>
           <div class="np-lyrics-tools">
             <button class="icon-btn" data-action="lyrics-karaoke" id="lyrKaraoke" title="Караоке-режим"><svg class="ico"><use href="#i-expand"/></svg></button>
+            <button class="icon-btn" data-action="lyrics-copy" id="btnCopyLrc" title="Скопировать LRC с таймингами" aria-label="Скопировать LRC с таймингами" disabled><svg class="ico"><use href="#i-copy"/></svg></button>
             <button class="icon-btn" data-action="lyrics-refresh" title="Найти текст в интернете"><svg class="ico"><use href="#i-search"/></svg></button>
             <button class="icon-btn" data-action="lyrics-edit" title="Вставить текст / синхронизировать"><svg class="ico"><use href="#i-edit"/></svg></button>
             <button class="icon-btn" data-action="np-lyrics-off" title="Свернуть текст"><svg class="ico"><use href="#i-close"/></svg></button>
@@ -4845,18 +4848,13 @@ body.living-art .npfull-glow{opacity:calc(var(--pulse) * .7)}
 
 
   /* ============================================================
-     ЖИВАЯ ОБЛОЖКА: свечение в цвет обложки, дыхание и пульс в такт
+     ЖИВАЯ ОБЛОЖКА: свечение, дыхание и мягкая визуальная пульсация.
+     Не подключаем аудио к Web Audio: сохраняем обычный путь воспроизведения.
      ============================================================ */
   const livingArt = {
     on: true,          // включено ли вообще (настройка, хранится в IndexedDB)
-    ctx: null,         // AudioContext для анализатора
-    analyser: null,
-    data: null,
-    source: null,
     raf: 0,
     smooth: 0,
-    attempted: false,
-    failed: false,
     frames: 0
   };
 
@@ -4889,52 +4887,15 @@ body.living-art .npfull-glow{opacity:calc(var(--pulse) * .7)}
     toast(livingArt.on ? 'Живая обложка включена' : 'Живая обложка выключена');
   }
 
-  /** Анализатор подключается один раз, как ответвление: звук при этом идёт напрямую. */
-  function ensureAudioAnalyser() {
-    if (livingArt.analyser || livingArt.failed || livingArt.attempted) return !!livingArt.analyser;
-    livingArt.attempted = true;
-    try {
-      const AC = window.AudioContext || window.webkitAudioContext;
-      if (!AC) throw new Error('Web Audio не поддерживается');
-      const ctx = new AC();
-      const analyser = ctx.createAnalyser();
-      analyser.fftSize = 256;
-      analyser.smoothingTimeConstant = 0.74;
-      const source = ctx.createMediaElementSource(Player.audio);
-      source.connect(ctx.destination);     // звук — напрямую, без изменений
-      source.connect(analyser);            // анализатор — только «на подслушку»
-      livingArt.ctx = ctx;
-      livingArt.analyser = analyser;
-      livingArt.data = new Uint8Array(analyser.frequencyBinCount);
-      livingArt.source = source;
-      if (ctx.state === 'suspended') ctx.resume().catch(() => {});
-    } catch (e) {
-      console.warn('Живая обложка: пульс в такт недоступен —', e && e.message);
-      livingArt.failed = true;
-      livingArt.ctx = null;
-      livingArt.analyser = null;
-    }
-    return !!livingArt.analyser;
-  }
-
   function setLivingPulse(v) {
     const np = $('#npFull');
     if (!np) return;
     np.style.setProperty('--pulse', (Math.max(0, Math.min(1.4, v))).toFixed(3));
   }
 
-  /** Уровень низа (кик, бас) — именно он даёт «пульс», а не средние частоты. */
-  function readAudioLevel(now) {
-    if (!livingArt.analyser) {
-      // запасной вариант без Web Audio: очень медленное «дыхание»
-      return 0.22 + 0.16 * Math.sin(now / 900);
-    }
-    livingArt.analyser.getByteFrequencyData(livingArt.data);
-    const bins = Math.min(10, livingArt.data.length);
-    let sum = 0;
-    for (let i = 1; i < bins; i++) sum += livingArt.data[i] * livingArt.data[i];
-    const rms = Math.sqrt(sum / Math.max(1, bins - 1)) / 255;
-    return rms;
+  /** Декоративная пульсация не анализирует и не меняет аудиосигнал. */
+  function readVisualPulse(now) {
+    return 0.22 + 0.16 * Math.sin(now / 900);
   }
 
   function livingFrame(now) {
@@ -4945,9 +4906,7 @@ body.living-art .npfull-glow{opacity:calc(var(--pulse) * .7)}
       livingArt.smooth = 0;
       return;
     }
-    const raw = readAudioLevel(now);
-    const target = Math.min(1, raw * 1.9);
-    // быстрая атака (вспышка на удар) и плавный спад
+    const target = Math.min(1, readVisualPulse(now) * 1.9);
     const k = target > livingArt.smooth ? 0.55 : 0.10;
     livingArt.smooth += (target - livingArt.smooth) * k;
     setLivingPulse(livingArt.smooth);
@@ -4958,7 +4917,6 @@ body.living-art .npfull-glow{opacity:calc(var(--pulse) * .7)}
   function startLivingLoop() {
     if (!livingArt.on || livingArt.raf) return;
     if (!Player.state.playing) return;
-    ensureAudioAnalyser();
     livingArt.raf = requestAnimationFrame(livingFrame);
   }
 
@@ -5325,6 +5283,7 @@ body.living-art .npfull-glow{opacity:calc(var(--pulse) * .7)}
       case 'lyrics-retry': loadLyricsFor(Player.current(), true); break;
       case 'lyrics-refresh': loadLyricsFor(Player.current(), true); break;
       case 'lyrics-edit': openLyricsEditor(); break;
+      case 'lyrics-copy': copyLyricsLrc(); break;
       case 'lyrics-sync': startSync(); break;
       case 'lyrics-sync-stamp': stampLine(); break;
       case 'lyrics-sync-undo': undoSync(); break;
@@ -6533,6 +6492,55 @@ body.living-art .npfull-glow{opacity:calc(var(--pulse) * .7)}
     return { lines, synced: !!ly.synced && hasSyncedTimes(lines), source: ly.source || 'manual' };
   }
 
+  function setCopyLrcEnabled(enabled) {
+    const btn = $('#btnCopyLrc');
+    if (!btn) return;
+    btn.disabled = !enabled;
+    btn.title = enabled ? 'Скопировать LRC с таймингами' : 'Нет синхронизированного текста для копирования';
+  }
+
+  async function copyTextToClipboard(text) {
+    if (navigator.clipboard && typeof navigator.clipboard.writeText === 'function') {
+      try {
+        await navigator.clipboard.writeText(text);
+        return;
+      } catch (e) { /* пробуем старый способ для file:// и ограниченных браузеров */ }
+    }
+
+    const ta = document.createElement('textarea');
+    ta.value = text;
+    ta.setAttribute('readonly', '');
+    ta.style.position = 'fixed';
+    ta.style.left = '-9999px';
+    ta.style.top = '0';
+    ta.style.opacity = '0';
+    document.body.appendChild(ta);
+    ta.focus();
+    ta.select();
+    let copied = false;
+    try { copied = !!(document.execCommand && document.execCommand('copy')); }
+    finally { ta.remove(); }
+    if (!copied) throw new Error('Буфер обмена недоступен');
+  }
+
+  async function copyLyricsLrc() {
+    const track = Player.current();
+    const ly = getLyrics(track);
+    if (!track || !ly || !ly.synced) {
+      toast('У этого текста нет LRC-таймингов', 'err');
+      return false;
+    }
+    const text = String(track.lyrics.synced || buildLrc(ly.lines));
+    try {
+      await copyTextToClipboard(text);
+      toast('LRC-текст с таймингами скопирован');
+      return true;
+    } catch (e) {
+      toast('Не удалось скопировать текст: браузер заблокировал буфер обмена', 'err');
+      return false;
+    }
+  }
+
   async function saveLyrics(track, data) {
     track.lyrics = {
       synced: data.synced || null,
@@ -6671,6 +6679,7 @@ body.living-art .npfull-glow{opacity:calc(var(--pulse) * .7)}
     if (btn) btn.classList.toggle('on', npView.tab === 'lyrics');
 
     if (!track) {
+      setCopyLrcEnabled(false);
       body.innerHTML = `<div class="lyr-empty">${ICON('lyrics')}<p>Включите трек — и здесь появится текст.</p></div>`;
       $('#npLyricsSource').textContent = 'Текст песни';
       return;
@@ -6678,17 +6687,20 @@ body.living-art .npfull-glow{opacity:calc(var(--pulse) * .7)}
 
     /* режим расстановки таймингов */
     if (lyricState.sync && lyricState.sync.trackId === track.id) {
+      setCopyLrcEnabled(false);
       renderSyncMode(body);
       return;
     }
 
     if (lyricState.loading) {
+      setCopyLrcEnabled(false);
       $('#npLyricsSource').textContent = 'Ищем текст…';
       body.innerHTML = `<div class="lyr-empty"><div class="lyr-spinner"></div><p>Ищу текст в LRCLIB…</p></div>`;
       return;
     }
 
     const ly = getLyrics(track);
+    setCopyLrcEnabled(!!(ly && ly.synced));
 
     if (!ly) {
       $('#npLyricsSource').textContent = 'Текст песни';
@@ -6966,7 +6978,7 @@ body.living-art .npfull-glow{opacity:calc(var(--pulse) * .7)}
 
   /* ---------- публичный API (для отладки и тестов) ---------- */
   window.SpotClone = {
-    version: '1.1.0',
+    version: '1.7.0',
     state: state,
     Player: Player,
     livingArt: livingArt,
@@ -7009,6 +7021,7 @@ body.living-art .npfull-glow{opacity:calc(var(--pulse) * .7)}
     lyrics: {
       parseLrc: parseLrc, buildLrc: buildLrc, getLyrics: getLyrics, saveLyrics: saveLyrics,
       fetchLyricsOnline: fetchLyricsOnline, loadLyricsFor: loadLyricsFor,
+      copyLyricsLrc: copyLyricsLrc,
       startSync: startSync, stampLine: stampLine, finishSync: finishSync,
       toggleLyrics: toggleLyrics, showLyricsTab: showLyricsTab
     },
